@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Akari Digita v0.8</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta charset="utf-8" />
+        <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png">
+        <link rel="shortcut icon" href="./favicon.ico">
+        <meta name="msapplication-TileColor" content="#603cba">
+        <meta name="theme-color" content="#000000">
+    <style>
+        :root {
+            --bg-dark: #000;
+            --bg-darker: #000;
+            --accent: darkcyan;
+            --text: #e0e0e0;
+            --border: #333;
+            --sidebar-width: 0px;
+            --notification-bg: rgba(32, 33, 36, 0.65);
+            --notification-text: #fff;
+            --notification-subtext: rgba(205, 205, 255, 0.8);
+    }
+
+    .notification-container {
+      position: fixed;
+      top: 100px;
+      right: calc(-100vw + 312px);
+      margin: 0;
+      padding: 16px;
+      background: var(--notification-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom-left-radius: 12px;
+      border-top-left-radius: 12px;
+      width: 320px;
+      transform: translateX(100%);
+      opacity: 0;
+      transition: transform 0.4s cubic-bezier(0.2, 0, 0, 1),
+                  opacity 0.3s ease-in-out;
+      z-index: 28;
+      display: flex;
+      align-items: flex-end;
+      gap: 12px;
+      color: var(--notification-text);
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+    }
+
+    .notification-container.show {
+      transform: translateX(0);
+      opacity: 1;
+    }
+
+    .notification-container.animated-border {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .notification-container.animated-border::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border: 3px solid transparent;
+      border-right: none;
+      border-top-right-radius: 0;
+      border-top-left-radius: 12px;
+      border-bottom-left-radius: 12px;
+      background: linear-gradient(var(--notification-bg), var(--notification-bg)) padding-box,
+                  repeating-linear-gradient(var(--angle, 0deg), var(--border-colors)) border-box;
+      -webkit-mask: linear-gradient(#fff 0 0) padding-box,
+                   linear-gradient(#fff 0 0);
+      mask: linear-gradient(#fff 0 0) padding-box,
+            linear-gradient(#fff 0 0);
+      -webkit-mask-composite: destination-out;
+      mask-composite: exclude;
+      animation: rotate 4s linear infinite,
+                 glow 2s ease-in-out infinite alternate;
+    }
+
+    @keyframes rotate {
+      0% {
+        --angle: 0deg;
+      }
+      100% {
+        --angle: 360deg;
+      }
+    }
+
+    @keyframes glow {
+      0% {
+        filter: drop-shadow(0 0 15px rgba(var(--glow-color), 1))
+               drop-shadow(0 0 30px rgba(var(--glow-color), 0.8))
+               drop-shadow(0 0 45px rgba(var(--glow-color), 0.6));
+      }
+      100% {
+        filter: drop-shadow(0 0 25px rgba(var(--glow-color), 1))
+               drop-shadow(0 0 50px rgba(var(--glow-color), 0.8))
+               drop-shadow(0 0 75px rgba(var(--glow-color), 0.6));
+      }
+    }
+
+    @property --angle {
+      syntax: '<angle>';
+      initial-value: 0deg;
+      inherits: false;
+    }
+
+    .notification-image {
+      width: 48px;
+      height: 48px;
+      object-fit: cover;
+      border-radius: 4px;
+      flex-shrink: 0;
+    }
+
+    .notification-content {
+      flex-grow: 1;
+      margin-right: 24px;
+    }
+
+    .notification-title {
+      font-weight: bold;
+      margin-bottom: 4px;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    }
+
+    .notification-body {
+      color: var(--notification-subtext);
+    }
+
+    .notification-close {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      width: 20px;
+      height: 20px;
+      border: none;
+      background: none;
+      cursor: pointer;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0.6;
+      transition: opacity 0.2s;
+    }
+
+    .notification-close:hover {
+      opacity: 1;
+    }
+
+    .notification-close::before,
+    .notification-close::after {
+      content: '';
+      position: absolute;
+      width: 12px;
+      height: 2px;
+      background: var(--notification-text);
+      transform: rotate(45deg);
+    }
+
+    .notification-close::after {
+      transform: rotate(-45deg);
+    }
+        
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background: var(--bg-dark);
+            color: var(--text);
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 220px;
+            left:-220px;
+            background: var(--bg-darker);
+            border-right: 0px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1rem 0;
+            transition: all 0.3s ease;
+            z-index: 100;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                height: 100vh;
+                transform: translateX(calc(-1 * var(--sidebar-width)));
+            }
+
+            .panel.active {
+                width: 100vw;
+            }
+
+            .sidebar.show {
+                left:0;
+            }
+
+            .menu-toggle {
+                display: flex !important;
+            }
+
+            .main-content {
+                width: 100vw !important;
+                margin-left: 0 !important;
+            }
+        }
+
+        .menu-toggle {
+            display: none;
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            width: 40px;
+            height: 40px;
+            background: var(--bg-dark);
+            border: none;
+            border-radius: 8px;
+            color: var(--text);
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 101;
+            font-weight: bold;
+        }
+
+        .tab-button {
+            width: 200px;
+            height: auto;
+            padding: 0.75rem 0.5rem;
+            border-radius: 8px;
+            border: none;
+            background: transparent;
+            color: var(--text);
+            cursor: pointer;
+            margin: 0.5rem 0;
+            transition: all 0.3s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-size: large;
+        }
+
+        .tab-button:hover {
+            background: rgba(74, 158, 255, 0.2);
+        }
+
+        .tab-button.active {
+            background: var(--accent);
+            font-weight: bold;
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+            transition: margin-left 0.3s ease;
+            width: calc(100vw - var(--sidebar-width));
+            margin-left: var(--sidebar-width);
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                padding-top: 4rem;
+            }
+        }
+
+        .status-card {
+            margin: 0 auto;
+            background: rgba(26, 26, 26, 0.8);
+            backdrop-filter: blur(10px);
+            border: 0px solid rgba(74, 158, 255, 0.2);
+            padding: 0;
+            border-radius: 12px;
+            position: fixed;
+            overflow: hidden;
+            right:0;
+            height: 100vh;
+            width:100vw;
+        }
+
+        .panel {
+            opacity: 0;
+            transform: translateX(20px);
+            transition: all 0.3s ease-out;
+            position: absolute;
+            
+            width: calc(100vw - 220px);
+            height: 100vw;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            display: block;
+            justify-content: center;
+            align-items: center;
+            padding: 0rem;
+        }
+
+        .panel.active {
+            opacity: 1;
+            transform: translateX(0);
+            pointer-events: all;
+        }
+
+        .panel iframe {
+            width: 100%;
+            height: 100vh;
+            margin: 0 auto;
+            border-radius: 0px;
+            background: var(--bg-dark);
+            border: 0px solid var(--border);
+        }
+
+html {
+  overscroll-behavior: none;
+}
+
+
+    </style>
+</head>
+
+<body>
+
+    <button class="menu-toggle">
+        ☰
+    </button>
+
+    <div class="sidebar">
+        <button class="tab-button active" data-tab="server">
+            Akari Digita v0.8c
+          </button>
+      
+          <button class="tab-button" data-tab="chat">
+            Integrated UI
+          </button>
+      
+          <button class="tab-button" data-tab="voice-input">
+            Transcription
+          </button>
+
+          <button class="tab-button" data-tab="llm">
+            Intellegence
+          </button>
+
+          <button class="tab-button" data-tab="voice-output">
+            Voice
+          </button>
+        
+          <button class="tab-button" data-tab="xmenu">
+            Extensions
+          </button>
+        
+          <button class="tab-button" data-tab="settings">
+            Settings
+          </button>
+
+          <button class="tab-button" onclick="shutdown();">
+            ( ' ) Shutdown
+          </button>
+
+      
+    </div>
+
+    <div class="main-content">
+        <div class="panel active" id="server">
+            <div class="status-card">
+                <canvas class="matrix-bg" id="matrixCanvas"></canvas>
+            </div>
+        </div>
+
+        <div class="panel" id="chat">
+            <iframe data-src="./chatUI" frameborder="0"></iframe>
+        </div>
+
+        <div class="panel" id="voice-input">
+            <iframe data-src="./vosk" frameborder="0"></iframe>
+        </div>
+
+        <div class="panel" id="voice-output">
+            <iframe data-src="./vits" frameborder="0"></iframe>
+        </div>
+
+        <div class="panel" id="llm">
+            <iframe data-src="./llama" frameborder="0"></iframe>
+        </div>
+        
+        <div class="panel" id="xmenu">
+            <h1> No extensions </h1>
+        </div>
+        
+        <div class="panel" id="settings">
+            <iframe data-src="./settings" frameborder="0"></iframe>
+        </div>
+        
+    </div>
+    
+
+    <div style="position: fixed; top: 0; left:0;" id="notificationArea"></div>
+
+    
+    <script>
+
+        // Mobile menu toggle
+        const menuToggle = document.querySelector('.menu-toggle');
+        const sidebar = document.querySelector('.sidebar');
+
+        menuToggle.addEventListener('click', () => {
+            sidebar.classList.toggle('show');
+            menuToggle.classList.toggle('active');
+        });
+
+        // Close sidebar when clicking outside on mobile
+        document.addEventListener('click', (e) => {
+            if (window.innerWidth <= 768 &&
+                !sidebar.contains(e.target) &&
+                !menuToggle.contains(e.target)) {
+                sidebar.classList.remove('show');
+                menuToggle.classList.remove('active');
+            }
+        });
+
+
+
+        // Matrix animation settings
+        const canvas = document.getElementById('matrixCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const matrixSettings = {
+            opacity: 0.2,
+            color: '#FFFFFF',
+            speed: 2,
+            fontSize: 16
+        };
+
+        function resizeCanvas() {
+            canvas.width = canvas.parentElement.offsetWidth;
+            canvas.height = canvas.parentElement.offsetHeight;
+        }
+
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        const chars = '0 1 2 3 4 5 6 7 8 9 A B C D E F';
+        const drops = [];
+        const columns = canvas.width / matrixSettings.fontSize;
+
+        for (let i = 0; i < columns; i++) {
+            drops[i] = 1;
+        }
+
+        function drawMatrix() {
+            ctx.fillStyle = `rgba(0, 0, 0, ${0.05 * matrixSettings.speed})`;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = matrixSettings.color;
+            ctx.font = `${matrixSettings.fontSize}px monospace`;
+
+            for (let i = 0; i < drops.length; i++) {
+                const text = chars[Math.floor(Math.random() * chars.length)];
+                ctx.fillText(text, i * matrixSettings.fontSize, drops[i] * matrixSettings.fontSize);
+
+                if (drops[i] * matrixSettings.fontSize > canvas.height && Math.random() > 0.975) {
+                    drops[i] = 0;
+                }
+
+                if (Math.random() > (1 - 32 / 100)) {
+                    drops[i]++;
+                }
+            }
+        }
+
+        setInterval(drawMatrix, 33);
+
+
+        
+        
+        
+function showNotification(title, message, options = {}) {
+      const {
+        duration = 5000,
+        borderColor,
+        borderColors,
+        image
+      } = options;
+
+      // Remove existing notification if present
+      const existingNotification = document.querySelector('.notification-container');
+      if (existingNotification) {
+        existingNotification.remove();
+      }
+
+      // Create notification elements
+      const notification = document.createElement('div');
+      notification.className = 'notification-container';
+      
+      // Handle border styling
+      if (borderColors && borderColors.length > 1) {
+        notification.classList.add('animated-border');
+        notification.style.setProperty('--border-colors', borderColors.join(', '));
+        const glowColor = borderColors[0].match(/\d+/g).join(',');
+        notification.style.setProperty('--glow-color', glowColor);
+      } else if (borderColor) {
+        notification.classList.add('animated-border');
+        notification.style.setProperty('--border-colors', `${borderColor}, ${borderColor}`);
+        const glowColor = borderColor.match(/\d+/g).join(',');
+        notification.style.setProperty('--glow-color', glowColor);
+      }
+
+      // Create HTML content
+      const imageHtml = image ? `<img src="${image}" class="notification-image" alt="Notification image">` : '';
+      
+      notification.innerHTML = `
+        ${imageHtml}
+        <div class="notification-content">
+          <div class="notification-title">${title}</div>
+          <div class="notification-body">${message}</div>
+        </div>
+        <button class="notification-close" aria-label="Close notification"></button>
+      `;
+
+      // Add to DOM
+      //document.body.appendChild(notification);
+      var element = document.getElementById("notificationArea");
+      element.prepend(notification);
+
+      // Trigger sliding animation
+      requestAnimationFrame(() => notification.classList.add('show'));
+
+      // Setup close button
+      const closeButton = notification.querySelector('.notification-close');
+      closeButton.addEventListener('click', () => {
+        notification.classList.remove('show');
+        setTimeout(() => notification.remove(), 400);
+      });
+
+      // Auto-dismiss after duration
+      if (duration) {
+        setTimeout(() => {
+          if (notification.parentElement) {
+            notification.classList.remove('show');
+            setTimeout(() => notification.remove(), 400);
+          }
+        }, duration);
+      }
+    }
+            
+            async function loadscreen(message) {
+                document.getElementById('output').innerHTML += message + '<br>';
+                showNotification('System status updated:', message, {borderColors: ['#00FFFF', '#00FF00', '#0000FF', '#FFFFFF'] });
+            };
+            //loadscreen("Akari Digita starting...");
+
+    
+if (navigator.storage && navigator.storage.persist) {
+    navigator.storage.persist().then(granted => {
+        if (granted) {
+            showNotification('[OK]', 'Persistent storage granted!', {borderColors: ['#00FFFF', '#00FF00', '#0000FF', '#FFFFFF'] });
+        } else {
+            showNotification('[Error]', 'Persist cache failed, defaulting to temporary storage. Cache may be cleared.', {borderColors: ['#0000FF', '#0000ff', '#0000FF', '#0000ff'] });
+        }
+    });
+} else {
+    showNotification('[Error]', "Persistent storage API not supported.", {borderColors: ['#0000FF', '#0000ff', '#0000FF', '#0000ff'] });
+}
+
+
+
+
+
+
+
+
+
+        
+// Constants
+const SHUTDOWN_STATUS_KEY = 'shutdownstatus';
+const SHUTDOWN_SUCCESS_VALUE = 'success';
+const SHUTDOWN_RUNNING_VALUE = 'running';
+const LAZY_LOAD_KEY = 'lazyLoadPreference';
+const EXTENSIONS_KEY = 'extensions';
+
+// Default tab URLs
+const DEFAULT_TAB_URLS = {
+    chat: './miniUI',
+    'voice-input': './vosk',
+    'voice-output': './vits',
+    llm: './llama',
+    settings: './settings'
+};
+
+// Tab-specific localStorage keys
+const TAB_URL_KEYS = {
+    chat: 'chatUrl',
+    'voice-input': 'voiceInputUrl',
+    'voice-output': 'voiceOutputUrl',
+    llm: 'llmUrl',
+    settings: 'settingsUrl'
+};
+
+// Startup check
+function checkShutdownStatus() {
+    const shutdownStatus = localStorage.getItem(SHUTDOWN_STATUS_KEY);
+
+    if (shutdownStatus && shutdownStatus !== SHUTDOWN_SUCCESS_VALUE) {
+        showNotification('[Error]', "System was not properly shut down on last exit. \nUse the shutdown button in the menu to prevent this message from appearing.", {borderColors: ['#0000FF', '#0000ff', '#0000FF', '#0000ff'] });
+    }
+
+    localStorage.setItem(SHUTDOWN_STATUS_KEY, SHUTDOWN_RUNNING_VALUE);
+}
+
+// Validate and load a value from localStorage
+function getLocalStorageValue(key, defaultValue, validator) {
+    const value = localStorage.getItem(key);
+
+    // If the key doesn't exist, return the default value
+    if (value === null) {
+        showNotification('[Warning]', `LocalStorage key "${key}" not found. Using default value.`, {borderColors: ['#FFA500', '#FF8C00', '#FF7F50', '#FF4500'] });
+        return defaultValue;
+    }
+
+    // Validate the value
+    if (validator && !validator(value)) {
+        showNotification('[Error]', `Corrupted value found for key "${key}". Using default value.`, {borderColors: ['#FF0000', '#DC143C', '#B22222', '#8B0000'] });
+        return defaultValue;
+    }
+
+    return value;
+}
+
+// Validate URLs
+function isValidUrl(url) {
+    try {
+        //new URL(url); // Throws an error if the URL is invalid
+        return true;
+    } catch (e) {
+        return false;
+    }
+}
+
+// Load custom URLs for each tab from localStorage
+function loadTabUrls() {
+    const tabUrls = {};
+
+    Object.keys(TAB_URL_KEYS).forEach(tabId => {
+        const key = TAB_URL_KEYS[tabId];
+        const defaultValue = DEFAULT_TAB_URLS[tabId];
+        const url = getLocalStorageValue(key, defaultValue, isValidUrl);
+
+        tabUrls[tabId] = url;
+    });
+
+    return tabUrls;
+}
+
+// Load extensions from localStorage
+function loadExtensions() {
+    const extensions = getLocalStorageValue(EXTENSIONS_KEY, [], (value) => {
+        try {
+            const parsed = JSON.parse(value);
+            return Array.isArray(parsed) && parsed.every(item => typeof item === 'string' && isValidUrl(item));
+        } catch (e) {
+            return false;
+        }
+    });
+
+    return Array.isArray(extensions) ? extensions : [];
+}
+
+// Load external scripts
+function loadExternalScripts(scripts) {
+    scripts.forEach(scriptUrl => {
+        const script = document.createElement('script');
+        script.src = scriptUrl;
+        script.async = true;
+        document.body.appendChild(script);
+    });
+}
+
+// Initialize the page based on lazy loading preference
+function initializePage() {
+    const lazyLoadPreference = getLocalStorageValue(LAZY_LOAD_KEY, 'lazy', (value) => {
+        return ['lazy', 'full', 'safe'].includes(value);
+    });
+
+    const tabUrls = loadTabUrls();
+    const extensions = loadExtensions();
+
+    // Update iframe URLs with custom URLs
+    Object.keys(tabUrls).forEach(tabId => {
+        const iframe = document.getElementById(tabId).querySelector('iframe');
+        if (iframe) {
+            iframe.setAttribute('data-src', tabUrls[tabId]);
+        }
+    });
+
+    // Handle lazy loading preference
+    switch (lazyLoadPreference) {
+        case 'full':
+            // Load all iframes and extensions
+            document.querySelectorAll('.panel iframe').forEach(iframe => {
+                iframe.src = iframe.getAttribute('data-src');
+            });
+            loadExternalScripts(extensions);
+            break;
+
+        case 'safe':
+            // Load all iframes but not extensions
+            document.querySelectorAll('.panel iframe').forEach(iframe => {
+                iframe.src = iframe.getAttribute('data-src');
+            });
+            break;
+
+        case 'lazy':
+        default:
+            // Do nothing, iframes and extensions will load on tab switch
+            break;
+    }
+}
+
+// Tab management
+class TabManager {
+    constructor() {
+        this.tabs = {};
+        this.activeTab = null;
+        this.init();
+    }
+
+    init() {
+        document.querySelectorAll('.tab-button').forEach(button => {
+            const tabId = button.dataset.tab;
+            const panel = document.getElementById(tabId);
+
+            this.tabs[tabId] = {
+                button,
+                panel,
+                loaded: tabId === 'server' || tabId === 'xmenu' // Server and extensions tabs are not iframes
+            };
+
+            button.addEventListener('click', () => this.switchTab(tabId));
+        });
+
+        // Initialize with server tab
+        this.switchTab('server');
+    }
+
+    async switchTab(tabId) {
+        if (this.activeTab === tabId) return;
+
+        // Deactivate current tab
+        if (this.activeTab) {
+            this.tabs[this.activeTab].button.classList.remove('active');
+            this.tabs[this.activeTab].panel.classList.remove('active');
+        }
+
+        // Activate new tab
+        this.tabs[tabId].button.classList.add('active');
+        this.tabs[tabId].panel.classList.add('active');
+
+        // Load iframe content if not already loaded
+        if (!this.tabs[tabId].loaded) {
+            const iframe = this.tabs[tabId].panel.querySelector('iframe');
+            if (iframe) {
+                const src = iframe.getAttribute('data-src');
+                iframe.src = src;
+            }
+            this.tabs[tabId].loaded = true;
+        }
+
+        // Load extensions if this is the extensions tab
+        if (tabId === 'xmenu' && !this.tabs[tabId].loaded) {
+            const extensions = loadExtensions();
+            loadExternalScripts(extensions);
+            this.tabs[tabId].loaded = true;
+        }
+
+        this.activeTab = tabId;
+    }
+}
+
+// Initialize tab manager and page
+window.addEventListener('load', () => {
+    checkShutdownStatus();
+    initializePage();
+    const tabManager = new TabManager();
+});
+
+
+
+
+
+
+
+
+        
+// Shutdown function
+async function shutdown() {
+    // Display fullscreen splash screen
+    const splash = document.createElement('div');
+    splash.style.position = 'fixed';
+    splash.style.top = '0';
+    splash.style.left = '0';
+    splash.style.width = '100%';
+    splash.style.height = '100%';
+    splash.style.backgroundColor = 'black';
+    splash.style.color = 'white';
+    splash.style.display = 'flex';
+    splash.style.justifyContent = 'center';
+    splash.style.alignItems = 'center';
+    splash.style.zIndex = '10000';
+    splash.textContent = 'Attempting to shut down...';
+    document.body.appendChild(splash);
+
+    // Check for storage concerns
+    if (navigator.storage && navigator.storage.estimate) {
+        const estimate = await navigator.storage.estimate();
+        const usagePercentage = (estimate.usage / estimate.quota) * 100;
+
+        if (usagePercentage > 80) {
+            // Low storage detected
+            const confirmShutdown = confirm('Warning: Your device is low on storage and might attempt to delete Digita system files after shutdown. Do you still want to proceed? (Digita will automatically re-download deleted files when needed, chat history will not be lost.)');
+            if (!confirmShutdown) {
+                // Cancel shutdown
+                splash.remove();
+                return;
+            }
+        }
+    }
+
+    // Set shutdown status to "success"
+    localStorage.setItem(SHUTDOWN_STATUS_KEY, SHUTDOWN_SUCCESS_VALUE);
+
+    // Destroy the page and close it
+    window.addEventListener('beforeunload', () => {
+        document.body.innerHTML = 'exit code 0'; // Clear the page content
+    });
+    window.close(); // Attempt to close the window
+}
+
+        </script>
+    </div>
+
+</body>
+
+</html>

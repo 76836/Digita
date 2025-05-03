@@ -1,0 +1,553 @@
+<html><head><base href="." />
+<style>
+:root {
+  --bg-color: rgba(0,0,0,0.7);
+  --text-color: #fff; 
+  --accent-color: rgba(255,255,255,0.1);
+  --highlight: rgba(255,255,255,0.2);
+  --border-radius: 12px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: system-ui, sans-serif;
+  color: var(--text-color);
+  background: #000;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+.settings-container {
+  display: grid;
+  gap: 25px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.setting-group {
+  background: rgba(20,20,20,0.95);
+  box-shadow: 0 0 30px rgba(0,0,0,0.5);
+  backdrop-filter: blur(10px);
+  padding: 25px;
+  border-radius: var(--border-radius);
+  transition: all 0.3s ease;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+.setting-group h2 {
+  margin-bottom: 20px;
+  font-size: 1.8em;
+  text-shadow: 0 0 10px rgba(255,255,255,0.3);
+}
+
+.button-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+button {
+  background: linear-gradient(45deg, 
+    rgba(255,0,0,0.1),
+    rgba(0,255,0,0.1), 
+    rgba(0,0,255,0.1)
+  );
+  border: 1px solid rgba(255,255,255,0.1);
+  padding: 15px 25px;
+  border-radius: var(--border-radius);
+  color: var(--text-color);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 1.1em;
+  box-shadow: 0 0 20px rgba(0,0,0,0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+button:before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255,255,255,0.1),
+    transparent
+  );
+  transition: 0.5s;
+}
+
+button:hover:before {
+  left: 100%;
+}
+
+button:hover {
+  background: linear-gradient(45deg,
+    rgba(255,0,0,0.2),
+    rgba(0,255,0,0.2),
+    rgba(0,0,255,0.2)
+  );
+  animation: rgbGlow 2s infinite;
+  transform: translateY(-2px);
+}
+
+.save-list {
+  max-height: 300px;
+  overflow-y: auto;
+  background: var(--accent-color);
+  padding: 15px;
+  border-radius: var(--border-radius);
+  margin-top: 15px;
+}
+
+.save-item {
+  padding: 15px;
+  margin: 8px 0;
+  background: var(--bg-color);
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  font-size: 1.1em;
+}
+
+.save-item:hover {
+  animation: rgbGlow 2s infinite;
+}
+
+.modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--bg-color);
+  padding: 30px;
+  border-radius: var(--border-radius);
+  backdrop-filter: blur(10px);
+  z-index: 1000;
+  display: none;
+  min-width: 300px;
+  max-width: 400px;
+}
+
+.modal h3 {
+  margin-bottom: 20px;
+  font-size: 1.5em;
+}
+
+.modal p {
+  margin-bottom: 20px;
+  font-size: 1.1em;
+}
+
+.modal input {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 20px;
+  border-radius: var(--border-radius);
+  background: var(--accent-color);
+  border: none;
+  color: var(--text-color);
+  font-size: 1.1em;
+}
+    
+    .title {
+        font-size: 2rem;
+        padding-left: 75px;
+        width: 100vw;
+        margin-right: 0;
+        text-align: left;
+        font-family: 'Orbitron', sans-serif;
+        word-wrap: break-word;
+        background-color: transparent;
+        color: darkcyan;
+        border-radius: 10px;
+        padding-bottom: 10px;
+        padding-top: 10px;
+    }
+    
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(5px);
+  z-index: 999;
+  display: none;
+}
+
+.search-container {
+  margin-bottom: 15px;
+  margin-top: 15px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 12px;
+  border-radius: var(--border-radius);
+  background: var(--accent-color);
+  border: none;
+  color: var(--text-color);
+  font-size: 1.1em;
+}
+
+.toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: var(--bg-color);
+  color: var(--text-color);
+  padding: 15px 25px;
+  border-radius: var(--border-radius);
+  backdrop-filter: blur(10px);
+  animation: slideIn 0.3s ease, fadeOut 0.3s ease 2s forwards;
+  z-index: 1001;
+}
+
+.success-flash {
+  animation: successPulse 0.5s ease;
+}
+
+@keyframes successPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+@keyframes rgbGlow {
+  0% { box-shadow: 0 0 20px rgba(255,0,0,0.5); }
+  33% { box-shadow: 0 0 20px rgba(0,255,0,0.5); }
+  66% { box-shadow: 0 0 20px rgba(0,0,255,0.5); }
+  100% { box-shadow: 0 0 20px rgba(255,0,0,0.5); }
+}
+
+@keyframes slideIn {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes fadeOut {
+  to { opacity: 0; }
+}
+
+@media (min-width: 768px) {
+  .settings-container {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 767px) {
+  .settings-container {
+    grid-template-columns: 1fr;
+  }
+  
+  .modal {
+    width: 90%;
+    max-width: none;
+  }
+  
+  button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 320px) {
+  body {
+    padding: 10px;
+  }
+  
+  .setting-group {
+    padding: 20px;
+  }
+  
+  .modal {
+    width: 95%;
+    padding: 20px;
+  }
+}
+</style>
+</head>
+<body>
+<p class="title" style="color:darkcyan;">SETTINGS v2.3</p>
+<div class="settings-container">
+  <div class="setting-group">
+    <h2>Interface Settings</h2>
+    <div class="button-group">
+      <button onclick="localStorage.removeItem('defaultAssistant');">Reset default UI in PWA.</button>
+      <button onclick="installupdates();">Check for and install updates.</button>
+      <button onclick="localStorage.setItem('lazyLoadPreference', 'lazy');">Enable lazy loading.</button>
+      <button onclick="localStorage.setItem('lazyLoadPreference', 'full');">Disable lazy loading.</button>
+    </div>
+  </div>
+
+  <div class="setting-group">
+    <h2>Speech Synthesis Panel</h2>
+    <div class="button-group">
+      <button onclick="setSpeechEngine('./vits')">VITS-WEB</button>
+      <!--<button onclick="setSpeechEngine('enhanced')">SpeechT5</button>
+      <button onclick="setSpeechEngine('offline')">Web Speech API</button>-->
+      <button onclick="setSpeechEngine('./feature_disabled')">Disable this feature.</button>
+    </div>
+  </div>
+
+  <div class="setting-group">
+    <h2>Speech Recognition Panel</h2>
+    <div class="button-group">
+      <button onclick="setSpeechInput('./vosk')">VOSK EN</button>
+      <!--<button onclick="setSpeechInput('enhanced')">Whisper Tiny EN</button>
+      <button onclick="setSpeechInput('offline')">Web Speech API</button>-->
+      <button onclick="setSpeechInput('./feature_disabled')">Disable this feature.</button>
+    </div>
+  </div>
+
+  <div class="setting-group">
+    <h2>LLM Panel</h2>
+    <div class="button-group">
+      <button onclick="setLLM('./llama')">Llama 3.2 1B</button>
+      <button onclick="setLLM('./granite')">IBM Granite 1B</button>
+      <button onclick="setLLM('./gemini')">Gemini API</button>
+      <button onclick="setLLM('./smollm')">Smollm 135M</button>
+      <button onclick="setLLM('./feature_disabled')">Disable this feature.</button>
+    </div>
+  </div>
+
+  <div class="setting-group">
+    <h2>Chat UI</h2>
+    <div class="button-group">
+      <button onclick="setUI('./miniUI')">simplified</button>
+      <button onclick="setUI('./chatUI')">Default</button>
+    </div>
+  </div>
+  
+  <div class="setting-group">
+    <h2>Avatar Widget</h2>
+    <div class="button-group">
+      <button onclick="setAvatar('./VRM')">Akari</button>
+      <button onclick="setAvatar('./VRM2')">Kumoharu</button>
+      <button onclick="setAvatar('./liteVRM')">Akari (lite)</button>
+      <button onclick="setAvatar('./feature_disabled')">Disable VRM Avatar</button>
+    </div>
+  </div>
+
+  <div class="setting-group">
+    <h2>Chat History</h2>
+    <div class="button-group">
+      <button onclick="backupChat()">Backup Chat</button>
+      <button onclick="showRestoreModal()">Restore Chat</button>
+      <button onclick="localStorage.removeItem('chatHistory');">Reset current chat memory</button>
+    </div>
+    <div class="search-container">
+      <input type="text" class="search-input" placeholder="Search saves..." onInput="searchSaves(this.value)">
+    </div>
+    <div id="saveList" class="save-list"></div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay"></div>
+<div class="modal" id="confirmModal">
+  <h3>Confirm Action</h3>
+  <p id="confirmMessage"></p>
+  <div class="button-group">
+    <button onclick="confirmAction()">Confirm</button>
+    <button onclick="closeModal()">Cancel</button>
+  </div>
+</div>
+
+<script>
+let pendingAction = null;
+
+function showToast(message) {
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  setTimeout(() => {
+    toast.remove();
+  }, 2300);
+}
+
+function setSpeechInput(engine) {
+  localStorage.setItem('voiceInputUrl', engine);
+  showToast('Speech recognizer updated');
+  animateSuccess('.setting-group');
+}
+
+function setUI(htmlpage) {
+  localStorage.setItem('chatUrl', htmlpage);
+  showToast('changed chat interface');
+  animateSuccess('.setting-group');
+}  
+  
+function setSpeechEngine(engine) {
+  localStorage.setItem('voiceOutputUrl', engine);
+  showToast('Speech engine updated');
+  animateSuccess('.setting-group');
+}
+
+function setLLM(model) {
+  localStorage.setItem('llmUrl', model);
+  showToast('LLM model updated');
+  animateSuccess('.setting-group');
+}
+
+function installupdates() {          
+if (navigator.onLine) {
+    alert('System: Sent update command, reload to apply update.');
+    if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.ready.then((registration) => {
+    registration.active.postMessage({ action: 'updateCache' });
+  });
+};
+} else {
+    alert('System: Internet is required to download updates.');
+};
+};
+    
+function setAvatar(style) {
+  localStorage.setItem('DigitaAvatar', style);
+  showToast('Avatar choice updated');
+  animateSuccess('.setting-group');
+}
+
+function resetUI() {
+  localStorage.removeItem('uiSettings');
+  showToast('UI reset to defaults');
+  setTimeout(() => {
+    window.location.reload();
+  }, 1000);
+}
+
+function toggleDarkMode() {
+  const isDark = localStorage.getItem('darkMode') === 'true';
+  localStorage.setItem('darkMode', !isDark);
+  showToast('Dark mode ' + (!isDark ? 'enabled' : 'disabled'));
+  animateSuccess('.setting-group');
+}
+
+function setAccessibility() {
+  const isAccessible = localStorage.getItem('accessibility') === 'true';
+  localStorage.setItem('accessibility', !isAccessible);
+  showToast('Accessibility mode ' + (!isAccessible ? 'enabled' : 'disabled'));
+  animateSuccess('.setting-group');
+}
+
+function backupChat() {
+  const modal = document.getElementById('confirmModal');
+  const message = document.createElement('div');
+  message.innerHTML = `
+    <h3>Backup Chat</h3>
+    <input type="text" id="backupName" placeholder="Enter backup name">
+    <div class="button-group">
+      <button onclick="saveBackup()">Save</button>
+      <button onclick="closeModal()">Cancel</button>
+    </div>
+  `;
+  modal.innerHTML = '';
+  modal.appendChild(message);
+  modal.style.display = 'block';
+  document.getElementById('overlay').style.display = 'block';
+}
+
+function saveBackup() {
+  const name = document.getElementById('backupName').value;
+  if (name) {
+    const chatHistory = localStorage.getItem('chatHistory');
+    localStorage.setItem(`chatHistory_backup_${name}`, chatHistory);
+    updateSaveList();
+    closeModal();
+    showToast('Backup created');
+  }
+}
+
+function showRestoreModal() {
+  updateSaveList();
+}
+
+function restoreChat(name) {
+  showModal("Loading this save will overwrite your current chat history. Continue?", () => {
+    const backup = localStorage.getItem(`chatHistory_backup_${name}`);
+    if (backup) {
+      localStorage.setItem('chatHistory', backup);
+      showReloadHint();
+    }
+  });
+}
+
+function searchSaves(query) {
+  const saveList = document.getElementById('saveList');
+  saveList.innerHTML = '';
+  
+  Object.keys(localStorage).forEach(key => {
+    if (key.startsWith('chatHistory_backup_')) {
+      const name = key.replace('chatHistory_backup_', '');
+      if (query === '' || name.toLowerCase().includes(query.toLowerCase())) {
+        const div = document.createElement('div');
+        div.className = 'save-item';
+        div.textContent = name;
+        div.onclick = () => restoreChat(name);
+        saveList.appendChild(div);
+      }
+    }
+  });
+}
+
+function updateSaveList() {
+  searchSaves('');
+}
+
+function showModal(message, action) {
+  document.getElementById('overlay').style.display = 'block';
+  document.getElementById('confirmModal').style.display = 'block';
+  document.getElementById('confirmMessage').textContent = message;
+  pendingAction = action;
+}
+
+function closeModal() {
+  document.getElementById('overlay').style.display = 'none';
+  document.getElementById('confirmModal').style.display = 'none';
+  pendingAction = null;
+}
+
+function confirmAction() {
+  if (pendingAction) {
+    pendingAction();
+    closeModal();
+  }
+}
+
+function animateSuccess(elementId) {
+  const element = document.querySelector(elementId);
+  element.classList.add('success-flash');
+  setTimeout(() => {
+    element.classList.remove('success-flash');
+  }, 500);
+}
+
+function showReloadHint() {
+  showModal("Please reload to apply changes", () => {
+    window.location.reload();
+  });
+}
+
+function resetChat() {
+  showModal("Are you sure you want to reset chat history?", () => {
+    localStorage.removeItem('chatHistory');
+    showReloadHint();
+  });
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', () => {
+  updateSaveList();
+});
+</script>
+
+</body></html>
