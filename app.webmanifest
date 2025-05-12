@@ -1,0 +1,36 @@
+{
+    "name": "Digita PWA",
+    "prefer_related_applications": false,
+    "short_name": "Digita",
+ "screenshots": [
+    {
+     "src": "./logo/Screenshot.png",
+      "sizes": "1080x2280",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Digita PWA"
+    }
+],
+
+"description": "Installing the Digita project as a PWA allows service worker features to work more reliably, and lets you use offline features, on top of making the app easier to launch and manage independantly of a browser window.",
+
+    "icons": [{
+        "src": "./logo/512.png",
+        "sizes": "512x512",
+        "type": "image/png"
+      },{
+        "src": "./logo/192.png",
+        "sizes": "192x192",
+        "type": "image/png",
+        "purpose": "maskable"
+      },{
+        "src": "./logo/144.png",
+        "sizes": "144x144",
+        "type": "image/png"
+      }],
+    "start_url": "./index",
+    "scope": "./",
+    "display": "standalone",
+    "background_color": "black",
+    "theme_color": "black"
+  }
