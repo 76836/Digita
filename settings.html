@@ -276,12 +276,12 @@ button:hover {
 </style>
 </head>
 <body>
-<p class="title" style="color:darkcyan;">SETTINGS v2.3</p>
+<p class="title" style="color:darkcyan;">SETTINGS v2.4</p>
 <div class="settings-container">
   <div class="setting-group">
     <h2>Interface Settings</h2>
     <div class="button-group">
-      <button onclick="localStorage.removeItem('defaultAssistant');">Reset default UI in PWA.</button>
+      <!--<button onclick="localStorage.removeItem('defaultAssistant');">Reset default UI in PWA.</button>-->
       <button onclick="installupdates();">Check for and install updates.</button>
       <button onclick="localStorage.setItem('lazyLoadPreference', 'lazy');">Enable lazy loading.</button>
       <button onclick="localStorage.setItem('lazyLoadPreference', 'full');">Disable lazy loading.</button>
@@ -291,31 +291,31 @@ button:hover {
   <div class="setting-group">
     <h2>Speech Synthesis Panel</h2>
     <div class="button-group">
-      <button onclick="setSpeechEngine('./vits')">VITS-WEB</button>
+      <button onclick="setSpeechEngine('./panels/vits')">VITS-WEB</button>
       <!--<button onclick="setSpeechEngine('enhanced')">SpeechT5</button>
       <button onclick="setSpeechEngine('offline')">Web Speech API</button>-->
-      <button onclick="setSpeechEngine('./feature_disabled')">Disable this feature.</button>
+      <button onclick="setSpeechEngine('./panels/feature_disabled')">Disable this feature.</button>
     </div>
   </div>
 
   <div class="setting-group">
     <h2>Speech Recognition Panel</h2>
     <div class="button-group">
-      <button onclick="setSpeechInput('./vosk')">VOSK EN</button>
+      <button onclick="setSpeechInput('./panels/vosk')">VOSK EN</button>
       <!--<button onclick="setSpeechInput('enhanced')">Whisper Tiny EN</button>
       <button onclick="setSpeechInput('offline')">Web Speech API</button>-->
-      <button onclick="setSpeechInput('./feature_disabled')">Disable this feature.</button>
+      <button onclick="setSpeechInput('./panels/feature_disabled')">Disable this feature.</button>
     </div>
   </div>
 
   <div class="setting-group">
     <h2>LLM Panel</h2>
     <div class="button-group">
-      <button onclick="setLLM('./llama')">Llama 3.2 1B</button>
-      <button onclick="setLLM('./granite')">IBM Granite 1B</button>
-      <button onclick="setLLM('./gemini')">Gemini API</button>
-      <button onclick="setLLM('./smollm')">Smollm 135M</button>
-      <button onclick="setLLM('./feature_disabled')">Disable this feature.</button>
+      <button onclick="setLLM('./panels/llama')">Llama 3.2 1B</button>
+      <button onclick="setLLM('./panels/granite')">IBM Granite 1B</button>
+      <button onclick="setLLM('./panels/gemini')">Gemini API</button>
+      <button onclick="setLLM('./panels/smollm')">Smollm 135M</button>
+      <button onclick="setLLM('./panels/feature_disabled')">Disable this feature.</button>
     </div>
   </div>
 
@@ -330,10 +330,10 @@ button:hover {
   <div class="setting-group">
     <h2>Avatar Widget</h2>
     <div class="button-group">
-      <button onclick="setAvatar('./VRM')">Akari</button>
-      <button onclick="setAvatar('./VRM2')">Kumoharu</button>
-      <button onclick="setAvatar('./liteVRM')">Akari (lite)</button>
-      <button onclick="setAvatar('./feature_disabled')">Disable VRM Avatar</button>
+      <!--<button onclick="setAvatar('./panels/VRM')">Akari</button>-->
+      <button onclick="setAvatar('./panels/VRM2')">Kumoharu</button>
+      <!--<button onclick="setAvatar('./panels/liteVRM')">Akari (lite)</button>-->
+      <button onclick="setAvatar('./panels/feature_disabled')">Disable VRM Avatar</button>
     </div>
   </div>
 
@@ -524,11 +524,12 @@ function confirmAction() {
 }
 
 function animateSuccess(elementId) {
-  const element = document.querySelector(elementId);
+  /*const element = document.querySelector(elementId);
   element.classList.add('success-flash');
   setTimeout(() => {
     element.classList.remove('success-flash');
-  }, 500);
+  }, 500);*/
+  //I'm just gonna disable this...
 }
 
 function showReloadHint() {
