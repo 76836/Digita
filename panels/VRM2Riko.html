@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>VRM viewer (actually good edition)</title>
+  <title>VRM viewer (Riko edition lol)</title>
   <!--<link rel="stylesheet" href="styles.css">-->
   <script type="importmap">
   {
@@ -164,8 +164,8 @@ const mouthState = {
 };
 
 const CONFIG = {
-  initialPosition: { x: 0, y: 1.4, z: 2.5 },
-  initialLookAt: { x: 0, y: 1.45, z: 0 },
+  initialPosition: { x: 0, y: 0.4, z: -2.5 },
+  initialLookAt: { x: 0, y: 1.15, z: 0 },
   zoom: 1.0,
   quality: 'high',
   antialias: true,
@@ -305,13 +305,14 @@ function loadVRM(url) {
     currentVrmContainer = new THREE.Group();
     currentVrmContainer.add(vrm.scene);
 
-    currentVrmContainer.rotation.y = Math.PI;
+    currentVrmContainer.rotation.y = 0;
+    currentVrmContainer.rotation.x = -0.35;
     scene.add(currentVrmContainer);
 
     const leftArm = vrm.humanoid.getBoneNode(VRMHumanBoneName.LeftUpperArm);
     const rightArm = vrm.humanoid.getBoneNode(VRMHumanBoneName.RightUpperArm);
-    if (leftArm) leftArm.rotation.z = Math.PI * -0.4;
-    if (rightArm) rightArm.rotation.z = -Math.PI * -0.4;
+    if (leftArm) leftArm.rotation.z = Math.PI * 0.4;
+    if (rightArm) rightArm.rotation.z = -Math.PI * 0.4;
 
     breathBaseY = currentVrmContainer.position.y;
     blinkState.elapsed = 0;
@@ -437,7 +438,7 @@ function updateEyeMovements(delta) {
   // When cursor is in the window, always track the cursor
   if (timeSinceLastMove < eyeState.idleInterval && currentVrm) {
     const normX = (pointerState.x / window.innerWidth - 0.5) * 2;
-    const normY = (pointerState.y / window.innerHeight - 0.5) * 2;
+    const normY = (-1 * pointerState.y / window.innerHeight + 0.5) * 2;
     
     eyeState.target.x = normX * eyeState.maxDeviation.x * eyeState.movementIntensity;
     eyeState.target.y = normY * eyeState.maxDeviation.y * eyeState.movementIntensity;
@@ -486,9 +487,9 @@ function updateEyeMovements(delta) {
   const rightEye = currentVrm.humanoid.getBoneNode(VRMHumanBoneName.RightEye);
 
   if (leftEye && rightEye) {
-    leftEye.rotation.y = eyeState.current.x + 0.4;
+    leftEye.rotation.y = eyeState.current.x + 0;
     leftEye.rotation.x = eyeState.current.y;
-    rightEye.rotation.y = eyeState.current.x - 0.4;
+    rightEye.rotation.y = eyeState.current.x - 0;
     rightEye.rotation.x = eyeState.current.y;
   }
 }
@@ -501,7 +502,7 @@ function updateIdle(delta) {
 
   // Calculate cursor proximity for mouth and eye coverage
   const normX = (pointerState.x / window.innerWidth - 0.5) * 2;
-  const normY = (pointerState.y / window.innerHeight - 0.5) * 2;
+  const normY = (-1 * pointerState.y / window.innerHeight - 0.5) * 2;
   mouthState.cursorProximity = Math.hypot(normX, normY);
 
   // Mouth stays open while cursor nearby
