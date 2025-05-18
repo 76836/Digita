@@ -224,7 +224,7 @@
     <div class="container">
         <div class="header">
             <i data-lucide="message-circle" style="color: rgb(45, 212, 191)"></i>
-            <h1>Llama3.2 1b on Wllama (v2.2b)</h1>
+            <h1>Llama3.2 1b on Wllama (v2.2c)</h1>
             <div class="status">
                 <div class="status-dot"></div>
                 <span id="status-text">Offline</span>
@@ -583,7 +583,7 @@ function getLocalStorageValue(key, defaultValue, validator) {
 
     switch (lazyLoadPreference) {
         case 'full':
-            setTimeout(() => { button.remove(); initWllama(); }, 1000); 
+            setTimeout(() => { const button = document.querySelector('.load-model-button'); button.remove(); initWllama(); }, 1000); 
             break;
 
         case 'safe':
