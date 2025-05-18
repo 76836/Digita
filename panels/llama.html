@@ -224,7 +224,7 @@
     <div class="container">
         <div class="header">
             <i data-lucide="message-circle" style="color: rgb(45, 212, 191)"></i>
-            <h1>Llama3.2 1b on Wllama (v2.1)</h1>
+            <h1>Llama3.2 1b on Wllama (v2.2)</h1>
             <div class="status">
                 <div class="status-dot"></div>
                 <span id="status-text">Offline</span>
@@ -232,7 +232,7 @@
         </div>
 
         <div id="setup-container">
-            <textarea id="system-prompt">You are a helpful AI assistant. You provide accurate, helpful, and direct responses while maintaining safety and ethics.</textarea>
+            <textarea id="system-prompt"></textarea>
             <button id="save-prompt" class="button">
                 <i data-lucide="save"></i>
                 Save System Prompt
@@ -287,6 +287,7 @@ function loadTokenCache() {
             
             tokenCache = validCache;
             console.log('Token cache loaded and validated');
+            localStorage.setItem('globalLoadingStatus', 'PID1738:1% Wllama is warming up...');
         }
     } catch (error) {
         console.error('Error loading token cache:', error);
@@ -450,6 +451,7 @@ async function tokenizeAndCache(message) {
                     progressCallback: ({ loaded, total }) => {
                         const progress = Math.round((loaded / total) * 100);
                         loadingDiv.textContent = `Loading model... ${progress}%`;
+                        localStorage.setItem('globalLoadingStatus', `PID1738:${progress}% Loading language model files...`);
                     },
                     cache: true
                 }
@@ -469,9 +471,11 @@ async function tokenizeAndCache(message) {
 
             setupDigitaUserMessageListener();
             addMessageToUI('system', 'Model loaded successfully. You can start chatting!');
+            localStorage.setItem('globalLoadingStatus', 'PID1738:100% Language model fully initialized.');
         } catch (error) {
             console.error('Error initializing Wllama:', error);
             loadingDiv.textContent = 'Error loading model. Please try again.';
+            localStorage.setItem('globalLoadingStatus', 'PID1738:11% Failed to load the language model, Digita needs to restart!');
             statusText.textContent = 'Error';
             addLoadModelButton();
         }
@@ -558,6 +562,27 @@ clearButton.addEventListener('click', () => {
     loadSystemPrompt();
     loadChatHistory();
     addLoadModelButton();
+
+    const LAZY_LOAD_KEY = 'lazyLoadPreference';
+    const lazyLoadPreference = getLocalStorageValue(LAZY_LOAD_KEY, 'lazy', (value) => {
+        return ['lazy', 'full', 'safe'].includes(value);
+    });
+
+    switch (lazyLoadPreference) {
+        case 'full':
+            setTimeout(() => { button.remove(); initWllama(); }, 1000); 
+            break;
+
+        case 'safe':
+            console.log(`Wllama didn't load automatically because Digita is in safe mode.`);
+            break;
+
+        case 'lazy':
+        default:
+            // Do nothing, iframes and extensions will load on tab switch
+            break;
+    }
+
 </script>
 </body>
 </html>
