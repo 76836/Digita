@@ -160,7 +160,7 @@
 
         .status-text {
             color: white;
-            font-size: 3rem;
+            font-size: 0.75rem;
             font-family: monospace;
             letter-spacing: 0.1em;
             border: 2px solid white;
@@ -616,7 +616,7 @@ html {
     </div>
 
     <script>
-        localStorage.setItem('globalLoadingStatus', 'PID0:0% Welcome to the Digita project!');
+        localStorage.setItem('globalLoadingStatus', '');
         document.addEventListener('DOMContentLoaded', () => {
             //const savedUrl = localStorage.getItem('backgroundUrl') || 'https://76836.github.io/bubbles';
             //document.getElementById('backgroundFrame').src = savedUrl;
@@ -709,7 +709,7 @@ const interval = setInterval(() => {
     if (currentProgress === 100) {
         clearInterval(interval);
     }
-}, 800);
+}, 200);
 
 // Add a storage event listener to catch updates from other tabs/windows
 window.addEventListener('storage', (event) => {
