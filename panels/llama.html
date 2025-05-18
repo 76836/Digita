@@ -224,7 +224,7 @@
     <div class="container">
         <div class="header">
             <i data-lucide="message-circle" style="color: rgb(45, 212, 191)"></i>
-            <h1>Llama3.2 1b on Wllama (v2.2)</h1>
+            <h1>Llama3.2 1b on Wllama (v2.2b)</h1>
             <div class="status">
                 <div class="status-dot"></div>
                 <span id="status-text">Offline</span>
@@ -563,6 +563,19 @@ clearButton.addEventListener('click', () => {
     loadChatHistory();
     addLoadModelButton();
 
+
+    // load a value from localStorage
+function getLocalStorageValue(key, defaultValue, validator) {
+    const value = localStorage.getItem(key);
+
+    // If the key doesn't exist, return the default value
+    if (value === null) {
+        return defaultValue;
+    }
+
+    return value;
+}
+    
     const LAZY_LOAD_KEY = 'lazyLoadPreference';
     const lazyLoadPreference = getLocalStorageValue(LAZY_LOAD_KEY, 'lazy', (value) => {
         return ['lazy', 'full', 'safe'].includes(value);
