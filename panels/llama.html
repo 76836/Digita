@@ -358,7 +358,7 @@ async function tokenizeAndCache(message) {
 
     // Add model loading button
     const addLoadModelButton = () => {
-        const button = document.createElement('button');
+        var button = document.createElement('button');
         button.className = 'load-model-button';
         button.innerHTML = '<i data-lucide="download"></i> Load Model';
         messagesDiv.appendChild(button);
