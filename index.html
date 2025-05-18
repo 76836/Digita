@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
     <head>
-    <title>Digita v0.8</title>
+    <title>Digita v0.9</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -24,6 +24,202 @@
             --notification-subtext: rgba(205, 205, 255, 0.8);
     }
 
+
+
+
+
+
+        .container {
+            position: relative;
+            min-height: 100vh;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .iframe-container {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .iframe {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border: 0;
+            z-index: 0;
+            object-fit: cover;
+            object-position: center;
+            min-width: 100%;
+            min-height: 100%;
+        }
+
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.2);
+            z-index: 10;
+        }
+
+        .content {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            padding-bottom: 4rem;
+            z-index: 20;
+        }
+
+        .progress-container {
+            width: 80%;
+            margin-bottom: 2rem;
+        }
+
+        .corner-accent {
+            position: absolute;
+            width: 2rem;
+            height: 2rem;
+            border-color: white;
+            border-width: 2px;
+        }
+
+        .progress-outer {
+            padding: 0.5rem;
+            border: 2px solid white;
+            border-radius: 0;
+            background-color: rgba(0, 0, 0, 0.7);
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+        }
+
+        .progress-inner {
+            position: relative;
+            height: 2rem;
+            width: 100%;
+            overflow: hidden;
+            border-radius: 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(to right,
+                    rgba(255, 255, 255, 0),
+                    rgba(255, 255, 255, 1),
+                    rgba(0, 255, 255, 1));
+            transition: width 0.3s ease-out;
+        }
+
+        .scanline {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(transparent 49%,
+                    rgba(255, 255, 255, 0.3) 50%,
+                    transparent 51%);
+            animation: scanline 2s linear infinite;
+            background-size: 100% 10px;
+        }
+
+        .glow-edge {
+            position: absolute;
+            right: 0;
+            top: 0;
+            height: 100%;
+            width: 2px;
+            background: white;
+            box-shadow: 0 0 10px 3px rgba(255, 255, 255, 0.7);
+        }
+
+        .percentage {
+            position: absolute;
+            right: 0.5rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: black;
+            padding: 0 0.5rem;
+            border: 1px solid white;
+            border-radius: 0;
+            color: white;
+            font-family: monospace;
+            font-size: 0.875rem;
+            box-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+        }
+
+         video {
+            object-fit: cover;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+        }
+
+        .status-text {
+            color: white;
+            font-size: 3rem;
+            font-family: monospace;
+            letter-spacing: 0.1em;
+            border: 2px solid white;
+            padding: 1rem 2rem;
+            background-color: rgba(0, 0, 0, 0.5);
+            border-radius: 0;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+            margin-bottom: 2rem;
+            width: 80%;
+            max-width: 900px;
+            text-align: left;
+        }
+
+        @keyframes scanline {
+            from {
+                background-position: 0 0;
+            }
+
+            to {
+                background-position: 0 100%;
+            }
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.69;
+            }
+        }
+
+        /* Media query for larger displays */
+        @media (min-width: 768px) {
+            .status-text {
+                font-size: 1.5rem;
+                margin-bottom: 2rem;
+                padding: 0.5rem 1rem;
+                align-self: flex-start;
+                margin-left: 0%;
+            }
+
+            .content {
+                align-items: flex-start;
+                padding-left: 20%;
+            }
+        }
+
+
+
+
+        
     .notification-container {
       position: fixed;
       top: 100px;
@@ -342,7 +538,7 @@ html {
 
     <div class="sidebar">
           <button class="tab-button active" data-tab="server">
-            Digita v0.8e
+            Digita v0.9
           </button>
         
           <button class="tab-button" data-tab="settings">
@@ -378,9 +574,156 @@ html {
 
     <div class="main-content">
         <div class="panel active" id="server">
-            <div class="status-card">
-                <canvas class="matrix-bg" id="matrixCanvas"></canvas>
+
+
+               <div class="container">
+        <div class="iframe-container">
+            <!--<iframe class="iframe" id="backgroundFrame" title="Background" sandbox="allow-scripts"></iframe>-->
+            <video autoplay loop muted playsinline>
+        <source src="https://76836.github.io/Digita/logo/DigitaIntro.mp4" type="video/mp4">
+        bruh
+        </video>
+        </div>
+        <div class="overlay"></div>
+        <div class="content">
+            <div class="progress-container">
+                <div class="relative" style="position: relative;">
+                    <div class="corner-accent"
+                        style="left: -1rem; top: -1rem; border-left: 2px solid white; border-top: 2px solid white;">
+                    </div>
+                    <div class="corner-accent"
+                        style="right: -1rem; top: -1rem; border-right: 2px solid white; border-top: 2px solid white;">
+                    </div>
+                    <!--<div class="corner-accent" style="left: -1rem; bottom: -1rem; border-left: 2px solid white; border-bottom: 2px solid white;"></div>-->
+                    <div class="corner-accent"
+                        style="right: -1rem; bottom: -1rem; border-right: 2px solid white; border-bottom: 2px solid white;">
+                    </div>
+                    <div class="progress-outer">
+                        <div class="progress-inner">
+                            <div class="progress-fill" id="progressFill" style="width: 0%">
+                                <div class="scanline"></div>
+                                <div class="glow-edge"></div>
+                                <div class="percentage" id="percentage">0%</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="status-text">
+                    <span id="loadStatusText" class="pulse">Loading...</span>
+                </div>
             </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            //const savedUrl = localStorage.getItem('backgroundUrl') || 'https://76836.github.io/bubbles';
+            //document.getElementById('backgroundFrame').src = savedUrl;
+
+            let currentProgress = 0;
+            const progressFill = document.getElementById('progressFill');
+            const percentage = document.getElementById('percentage');
+            const stattext = document.getElementById('loadStatusText');
+
+          // Track progress of individual processes
+const processStates = {};
+let overallProgress = 0;
+
+// Extract PID and percentage from globalLoadingStatus string
+function extractProgressInfo(statusString) {
+    if (!statusString) return null;
+    
+    // Match pattern like "PID1234:75%" or just find PID and percentage separately
+    const fullMatch = statusString.match(/PID(\d+):(\d+)%/);
+    if (fullMatch) {
+        return {
+            pid: fullMatch[1],
+            progress: parseInt(fullMatch[2], 10)
+        };
+    }
+    
+    // Try to find PID and percentage separately
+    const pidMatch = statusString.match(/PID(\d+)/);
+    const percentMatch = statusString.match(/(\d+)%/);
+    
+    if (pidMatch && percentMatch) {
+        return {
+            pid: pidMatch[1],
+            progress: parseInt(percentMatch[1], 10)
+        };
+    }
+    
+    return null;
+}
+
+// Calculate overall progress based on the least progressed process
+function calculateOverallProgress() {
+    // If no processes are tracked yet, return 0
+    if (Object.keys(processStates).length === 0) return 0;
+    
+    // Find the minimum progress among all tracked processes
+    return Math.min(...Object.values(processStates));
+}
+
+// Update a specific process's progress
+function updateProcessProgress(pid, progress) {
+    if (pid && !isNaN(progress)) {
+        // Only update if progress increased or process is new
+        if (!processStates[pid] || progress > processStates[pid]) {
+            processStates[pid] = progress;
+            // Recalculate overall progress
+            overallProgress = calculateOverallProgress();
+        }
+    }
+}
+
+// Create interval that replaces the original one
+const interval = setInterval(() => {
+    // Get progress info from localStorage
+    const statusString = localStorage.getItem('globalLoadingStatus');
+    const progressInfo = extractProgressInfo(statusString);
+    
+    // Update process tracking if valid info found
+    if (progressInfo) {
+        updateProcessProgress(progressInfo.pid, progressInfo.progress);
+    }
+    
+    // Progress animation logic (from original code)
+    currentProgress += Math.random() * 10;
+    
+    // Ensure we never exceed the overall progress of the slowest process
+    if (currentProgress > overallProgress) {
+        currentProgress = overallProgress;
+    }
+    
+    // Cap at 100%
+    if (currentProgress > 100) currentProgress = 100;
+    
+    // Update UI elements
+    const progress = Math.floor(currentProgress);
+    progressFill.style.width = `${progress}%`;
+    percentage.textContent = `${progress}%`;
+    
+    // Clear interval when all processes complete
+    if (currentProgress === 100) {
+        clearInterval(interval);
+    }
+}, 800);
+
+// Add a storage event listener to catch updates from other tabs/windows
+window.addEventListener('storage', (event) => {
+    if (event.key === 'globalLoadingStatus') {
+        stattext.textContent = `event.newValue`;
+        const progressInfo = extractProgressInfo(event.newValue);
+        if (progressInfo) {
+            updateProcessProgress(progressInfo.pid, progressInfo.progress);
+        }
+    }
+});
+        });
+    </script>
+
+            
         </div>
 
         <div class="panel" id="chat">
