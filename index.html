@@ -714,7 +714,7 @@ const interval = setInterval(() => {
 // Add a storage event listener to catch updates from other tabs/windows
 window.addEventListener('storage', (event) => {
     if (event.key === 'globalLoadingStatus') {
-        stattext.textContent = `event.newValue`;
+        stattext.textContent = event.newValue;
         const progressInfo = extractProgressInfo(event.newValue);
         if (progressInfo) {
             updateProcessProgress(progressInfo.pid, progressInfo.progress);
