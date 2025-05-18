@@ -341,8 +341,12 @@ html {
     </button>
 
     <div class="sidebar">
-        <button class="tab-button active" data-tab="server">
-            Digita v0.8d
+          <button class="tab-button active" data-tab="server">
+            Digita v0.8e
+          </button>
+        
+          <button class="tab-button" data-tab="settings">
+            Settings
           </button>
       
           <button class="tab-button" data-tab="chat">
@@ -365,10 +369,6 @@ html {
             Extensions
           </button>
         
-          <button class="tab-button" data-tab="settings">
-            Settings
-          </button>
-
           <button class="tab-button" onclick="shutdown();">
             ( ' ) Shutdown
           </button>
@@ -388,15 +388,15 @@ html {
         </div>
 
         <div class="panel" id="voice-input">
-            <iframe data-src="./vosk" frameborder="0"></iframe>
+            <iframe data-src="./panels/feature_disabled.html" frameborder="0"></iframe>
         </div>
 
         <div class="panel" id="voice-output">
-            <iframe data-src="./vits" frameborder="0"></iframe>
+            <iframe data-src="./panels/feature_disabled.html" frameborder="0"></iframe>
         </div>
 
         <div class="panel" id="llm">
-            <iframe data-src="./llama" frameborder="0"></iframe>
+            <iframe data-src="./panels/feature_disabled.html" frameborder="0"></iframe>
         </div>
         
         <div class="panel" id="xmenu">
@@ -494,7 +494,7 @@ html {
             }
         }
 
-        setInterval(drawMatrix, 33);
+     //   setInterval(drawMatrix, 33);
 
 
         
@@ -782,14 +782,16 @@ class TabManager {
         this.tabs[tabId].panel.classList.add('active');
 
         // Load iframe content if not already loaded
-        if (!this.tabs[tabId].loaded) {
-            const iframe = this.tabs[tabId].panel.querySelector('iframe');
-            if (iframe) {
-                const src = iframe.getAttribute('data-src');
-                iframe.src = src;
-            }
-            this.tabs[tabId].loaded = true;
+if (!this.tabs[tabId].loaded) {
+    const iframe = this.tabs[tabId].panel.querySelector('iframe');
+    if (iframe) {
+        const src = iframe.getAttribute('data-src');
+        if (!iframe.src || iframe.src.endsWith(src)) {
+            iframe.src = src; // set only if not set or different
         }
+    }
+    this.tabs[tabId].loaded = true;
+}
 
         // Load extensions if this is the extensions tab
         if (tabId === 'xmenu' && !this.tabs[tabId].loaded) {
