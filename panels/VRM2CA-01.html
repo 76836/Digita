@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>VRM viewer (CA-01 edition)</title>
+  <title>VRM viewer (CA-01 edition v1.1)</title>
   <!--<link rel="stylesheet" href="styles.css">-->
   <script type="importmap">
   {
@@ -173,6 +173,102 @@ const CONFIG = {
   modelUrl: 'https://76836.github.io/Digita/models/3778356541607139512.vrm'
 };
 
+const PERFORMANCE_PRESETS = [
+  {
+    name: 'ultraLow',
+    pixelRatio: 0.2,
+    antialias: false,
+    shadow: false,
+    light: 0.3,
+    desc: 'Minimum quality for slowest devices'
+  },
+  {
+    name: 'low',
+    pixelRatio: 0.4,
+    antialias: false,
+    shadow: false,
+    light: 0.5,
+    desc: 'Low quality'
+  },
+  {
+    name: 'medium',
+    pixelRatio: 0.6,
+    antialias: false,
+    shadow: false,
+    light: 1.0,
+    desc: 'Medium quality'
+  },
+  {
+    name: 'high',
+    pixelRatio: 1,
+    antialias: true,
+    shadow: true,
+    light: 1.8,
+    desc: 'High quality'
+  }
+];
+const FPS_TARGET = 24;
+
+class PerformanceManager {
+  constructor() {
+    this.presetIndex = 0; // Start at ultraLow
+    this.frames = 0;
+    this.lastTime = performance.now();
+    this.fps = 0;
+    this.checkInterval = 1000; // ms
+    this.lastPresetChange = 0;
+  }
+  update() {
+    this.frames++;
+    const now = performance.now();
+    if (now - this.lastTime > this.checkInterval) {
+      this.fps = this.frames * 1000 / (now - this.lastTime);
+      this.frames = 0;
+      this.lastTime = now;
+      this.adjustQuality();
+    }
+  }
+  adjustQuality() {
+    // Only adjust if quality hasn't changed too recently
+    if (performance.now() - this.lastPresetChange < 2000) return;
+    if (this.fps < FPS_TARGET - 2 && this.presetIndex > 0) {
+      // Too slow, reduce quality
+      this.presetIndex--;
+      this.apply();
+    } else if (this.fps > FPS_TARGET + 6 && this.presetIndex < PERFORMANCE_PRESETS.length - 1) {
+      // Plenty of headroom, increase quality
+      this.presetIndex++;
+      this.apply();
+    }
+  }
+  apply() {
+    const preset = PERFORMANCE_PRESETS[this.presetIndex];
+
+    // Update renderer pixel ratio and antialias
+    if (renderer) {
+      renderer.setPixelRatio(preset.pixelRatio);
+      renderer.antialias = preset.antialias;
+      renderer.setSize(window.innerWidth, window.innerHeight, false);
+    }
+    // Update shadow and light intensity
+    scene.traverse(obj => {
+      if (obj.isDirectionalLight || obj.isHemisphereLight) {
+        obj.intensity = preset.light;
+        if ('castShadow' in obj) obj.castShadow = preset.shadow;
+      }
+    });
+
+    // Optionally, update CONFIG for other future uses
+    CONFIG.quality = preset.name;
+    CONFIG.pixelRatio = preset.pixelRatio;
+    CONFIG.antialias = preset.antialias;
+    this.lastPresetChange = performance.now();
+    // Optionally show preset name (for debug):
+    // console.log('Quality set to:', preset.name, 'FPS:', this.fps);
+  }
+}
+let perfManager = null;
+    
 class PhysicsManager {
   constructor() {
     this.gravity = new THREE.Vector3(0, -1, 0);
@@ -267,15 +363,20 @@ function initScene() {
   camera.position.set(CONFIG.initialPosition.x, CONFIG.initialPosition.y, CONFIG.initialPosition.z);
   camera.lookAt(CONFIG.initialLookAt.x, CONFIG.initialLookAt.y, CONFIG.initialLookAt.z);
 
+  
   renderer = new THREE.WebGLRenderer({
-    antialias: CONFIG.antialias,
+    antialias: false, // Always start with ultraLow preset
     alpha: true,
-    powerPreference: CONFIG.quality === 'high' ? 'high-performance' : 'default'
+    powerPreference: 'low-power'
   });
+  renderer.setPixelRatio(PERFORMANCE_PRESETS[0].pixelRatio);
   renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.setPixelRatio(CONFIG.pixelRatio);
   document.getElementById('container').appendChild(renderer.domElement);
 
+  perfManager = new PerformanceManager();
+
+
+  
   clock = new THREE.Clock();
   window.addEventListener('resize', onWindowResize);
   window.addEventListener('pointermove', onPointerMove);
@@ -544,6 +645,7 @@ function updateIdle(delta) {
 
 function animate() {
   requestAnimationFrame(animate);
+  perfManager.update();
   const delta = clock.getDelta();
 
   if (currentVrm) {
