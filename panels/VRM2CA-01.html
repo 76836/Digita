@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>VRM viewer (CA-01 edition v1.1)</title>
+  <title>VRM viewer (CA-01 edition v1.2)</title>
   <!--<link rel="stylesheet" href="styles.css">-->
   <script type="importmap">
   {
@@ -207,66 +207,95 @@ const PERFORMANCE_PRESETS = [
     desc: 'High quality'
   }
 ];
-const FPS_TARGET = 24;
+//const FPS_TARGET = 24;
+
+
+const TARGET_LATENCY = 1000 / 48; // ms (~20.8ms/frame, 48fps)
+const RENDER_INTERVAL = 1000 / 24; // ms (41.6ms/frame, 24fps)
+const EMA_ALPHA = 0.15;
+const PIXEL_RATIO_MIN = 0.2;
+const PIXEL_RATIO_MAX = 1.5;
+const BLOOM_THRESHOLDS = { enable: 0.7, disable: 0.5 };
+const SHADOW_THRESHOLDS = { enable: 0.7, disable: 0.5 };
 
 class PerformanceManager {
   constructor() {
-    this.presetIndex = 0; // Start at ultraLow
-    this.frames = 0;
-    this.lastTime = performance.now();
-    this.fps = 0;
-    this.checkInterval = 1000; // ms
-    this.lastPresetChange = 0;
+    this.emaFrameTime = TARGET_LATENCY;
+    this.lastRender = performance.now();
+    this.lastAdjust = performance.now();
+    this.pixelRatio = PIXEL_RATIO_MIN; // Always start ultra-low
+    this.bloomEnabled = false;
+    this.shadowEnabled = false;
   }
+
+  // Call this every frame with ms since last frame, e.g. perfManager.recordFrameTime(dt);
   update() {
-    this.frames++;
+    // Kept for interface compatibility: call this every frame.
     const now = performance.now();
-    if (now - this.lastTime > this.checkInterval) {
-      this.fps = this.frames * 1000 / (now - this.lastTime);
-      this.frames = 0;
-      this.lastTime = now;
-      this.adjustQuality();
-    }
+    let dt = now - (this.lastRender || now);
+    this.lastRender = now;
+    this.recordFrameTime(dt);
+    this.adjustQuality();
   }
+
+  recordFrameTime(dt) {
+    this.emaFrameTime = EMA_ALPHA * dt + (1 - EMA_ALPHA) * this.emaFrameTime;
+  }
+
   adjustQuality() {
-    // Only adjust if quality hasn't changed too recently
-    if (performance.now() - this.lastPresetChange < 2000) return;
-    if (this.fps < FPS_TARGET - 2 && this.presetIndex > 0) {
-      // Too slow, reduce quality
-      this.presetIndex--;
-      this.apply();
-    } else if (this.fps > FPS_TARGET + 6 && this.presetIndex < PERFORMANCE_PRESETS.length - 1) {
-      // Plenty of headroom, increase quality
-      this.presetIndex++;
-      this.apply();
-    }
-  }
-  apply() {
-    const preset = PERFORMANCE_PRESETS[this.presetIndex];
+    const now = performance.now();
+    if (now - this.lastAdjust < 250) return;
+    this.lastAdjust = now;
 
-    // Update renderer pixel ratio and antialias
-    if (renderer) {
-      renderer.setPixelRatio(preset.pixelRatio);
-      renderer.antialias = preset.antialias;
-      renderer.setSize(window.innerWidth, window.innerHeight, false);
+    let over = this.emaFrameTime > TARGET_LATENCY + 2;
+    let under = this.emaFrameTime < TARGET_LATENCY - 2;
+
+    if (over && this.pixelRatio > PIXEL_RATIO_MIN) {
+      this.pixelRatio *= 0.97;
+      if (this.pixelRatio < PIXEL_RATIO_MIN) this.pixelRatio = PIXEL_RATIO_MIN;
+    } else if (under && this.pixelRatio < PIXEL_RATIO_MAX) {
+      this.pixelRatio *= 1.025;
+      if (this.pixelRatio > PIXEL_RATIO_MAX) this.pixelRatio = PIXEL_RATIO_MAX;
     }
-    // Update shadow and light intensity
-    scene.traverse(obj => {
-      if (obj.isDirectionalLight || obj.isHemisphereLight) {
-        obj.intensity = preset.light;
-        if ('castShadow' in obj) obj.castShadow = preset.shadow;
+
+    this.pixelRatio = Math.max(PIXEL_RATIO_MIN, Math.min(PIXEL_RATIO_MAX, this.pixelRatio));
+    if (typeof renderer !== "undefined") renderer.setPixelRatio(this.pixelRatio);
+
+    // Enable/disable bloom based on pixel ratio
+    if (typeof bloomPass !== "undefined") {
+      if (!this.bloomEnabled && this.pixelRatio > BLOOM_THRESHOLDS.enable) {
+        bloomPass.enabled = true;
+        this.bloomEnabled = true;
+      } else if (this.bloomEnabled && this.pixelRatio < BLOOM_THRESHOLDS.disable) {
+        bloomPass.enabled = false;
+        this.bloomEnabled = false;
       }
-    });
+    }
 
-    // Optionally, update CONFIG for other future uses
-    CONFIG.quality = preset.name;
-    CONFIG.pixelRatio = preset.pixelRatio;
-    CONFIG.antialias = preset.antialias;
-    this.lastPresetChange = performance.now();
-    // Optionally show preset name (for debug):
-    // console.log('Quality set to:', preset.name, 'FPS:', this.fps);
+    // Enable/disable shadow based on pixel ratio, but keep light color/intensity fixed!
+    if (typeof scene !== "undefined") {
+      if (!this.shadowEnabled && this.pixelRatio > SHADOW_THRESHOLDS.enable) {
+        scene.traverse(obj => {
+          if (obj.isDirectionalLight) {
+            obj.castShadow = true;
+            if (obj.shadow) obj.shadow.mapSize.set(2048, 2048);
+          }
+        });
+        this.shadowEnabled = true;
+      } else if (this.shadowEnabled && this.pixelRatio < SHADOW_THRESHOLDS.disable) {
+        scene.traverse(obj => {
+          if (obj.isDirectionalLight) {
+            obj.castShadow = false;
+            if (obj.shadow) obj.shadow.mapSize.set(512, 512);
+          }
+        });
+        this.shadowEnabled = false;
+      }
+    }
   }
 }
+
+export default PerformanceManager;
 let perfManager = null;
     
 class PhysicsManager {
@@ -365,7 +394,7 @@ function initScene() {
 
   
   renderer = new THREE.WebGLRenderer({
-    antialias: false, // Always start with ultraLow preset
+    antialias: true, // i think it looks nicer so i might just force this to stay on
     alpha: true,
     powerPreference: 'low-power'
   });
