@@ -51,7 +51,11 @@ self.addEventListener('fetch', (event) => {
         try {
           const networkResponse = await fetch(event.request);
           if (networkResponse && networkResponse.ok) {
-            const responseWithHeaders = await cloneWithHeaders(networkResponse.clone());
+            const pathname = new URL(event.request.url).pathname;
+            let responseWithHeaders = networkResponse;
+            if (pathname.startsWith('/Digita')) {
+              responseWithHeaders = await cloneWithHeaders(networkResponse.clone());
+            }
             cache.put(event.request, responseWithHeaders.clone());
             return responseWithHeaders;
           } else {
@@ -67,24 +71,27 @@ self.addEventListener('fetch', (event) => {
 });
 
 // Update event - force refresh all cached files (except vrm models)
-self.addEventListener('message', (event) => {
-  if (event.data.action === 'updateCache') {
-    caches.open(CACHE_NAME).then((cache) => {
-      cache.keys().then((keys) => {
-        keys.forEach((request) => {
-          const url = request.url;
-          if (!url.includes('vrm')) {  // skip vrm model files
-            fetch(request).then(async (response) => {
-              if (response.ok) {
-                const responseWithHeaders = await cloneWithHeaders(response.clone());
-                cache.put(request, responseWithHeaders);
+if (event.data.action === 'updateCache') {
+  caches.open(CACHE_NAME).then((cache) => {
+    cache.keys().then((keys) => {
+      keys.forEach((request) => {
+        const url = request.url;
+        const pathname = new URL(url).pathname;
+        if (!url.includes('.vrm')) {  // skip vrm model files
+          fetch(request).then(async (response) => {
+            if (response.ok) {
+              let responseWithHeaders = response;
+              if (pathname.startsWith('/Digita')) {
+                responseWithHeaders = await cloneWithHeaders(response.clone());
               }
-            }).catch((err) => {
-              console.error(`Failed to update ${url}:`, err);
-            });
-          }
-        });
+              cache.put(request, responseWithHeaders);
+            }
+          }).catch((err) => {
+            console.error(`Failed to update ${url}:`, err);
+          });
+        }
       });
     });
-  }
+  });
+}
 });
