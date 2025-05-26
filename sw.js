@@ -71,27 +71,28 @@ self.addEventListener('fetch', (event) => {
 });
 
 // Update event - force refresh all cached files (except vrm models)
-if (event.data.action === 'updateCache') {
-  caches.open(CACHE_NAME).then((cache) => {
-    cache.keys().then((keys) => {
-      keys.forEach((request) => {
-        const url = request.url;
-        const pathname = new URL(url).pathname;
-        if (!url.includes('.vrm')) {  // skip vrm model files
-          fetch(request).then(async (response) => {
-            if (response.ok) {
-              let responseWithHeaders = response;
-              if (pathname.startsWith('/Digita')) {
-                responseWithHeaders = await cloneWithHeaders(response.clone());
+self.addEventListener('message', (event) => {
+  if (event.data.action === 'updateCache') {
+    caches.open(CACHE_NAME).then((cache) => {
+      cache.keys().then((keys) => {
+        keys.forEach((request) => {
+          const url = request.url;
+          const pathname = new URL(url).pathname;
+          if (!url.includes('.vrm')) {  // skip vrm model files
+            fetch(request).then(async (response) => {
+              if (response.ok) {
+                let responseWithHeaders = response;
+                if (pathname.startsWith('/Digita')) {
+                  responseWithHeaders = await cloneWithHeaders(response.clone());
+                }
+                cache.put(request, responseWithHeaders);
               }
-              cache.put(request, responseWithHeaders);
-            }
-          }).catch((err) => {
-            console.error(`Failed to update ${url}:`, err);
-          });
-        }
+            }).catch((err) => {
+              console.error(`Failed to update ${url}:`, err);
+            });
+          }
+        });
       });
     });
-  });
-}
+  }
 });
