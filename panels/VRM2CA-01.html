@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>VRM viewer (CA-01 edition v1.2)</title>
+  <title>VRM viewer (CA-01 edition v1.3)</title>
   <!--<link rel="stylesheet" href="styles.css">-->
   <script type="importmap">
   {
@@ -209,9 +209,11 @@ const PERFORMANCE_PRESETS = [
 ];
 //const FPS_TARGET = 24;
 
-
-const TARGET_LATENCY = 1000 / 96; // ms (~10.4ms/frame, 96fps)
-const RENDER_INTERVAL = 1000 / 24; // ms (41.6ms/frame, 24fps)
+let ft = parseInt(localStorage.getItem('maxFrameTime')) || 40;
+let fps = parseInt(localStorage.getItem('frameRate')) || 24;
+    
+const TARGET_LATENCY = ft;
+const RENDER_INTERVAL = 1000 / fps; // ms (41.6ms/frame, 24fps)
 const EMA_ALPHA = 0.15;
 const PIXEL_RATIO_MIN = 0.2;
 const PIXEL_RATIO_MAX = 1.5;
