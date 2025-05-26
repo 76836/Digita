@@ -160,7 +160,7 @@ button:hover {
     
     .title {
         font-size: 2rem;
-        padding-left: 75px;
+        padding-left: 5px;
         width: 100vw;
         margin-right: 0;
         text-align: left;
@@ -277,7 +277,7 @@ button:hover {
 </style>
 </head>
 <body>
-<p class="title" style="color:darkcyan;">SETTINGS v2.6</p>
+<p class="title" style="color:darkcyan;">SETTINGS v2.7</p>
 <div class="settings-container">
   <div class="setting-group">
     <h2>Interface Settings</h2>
@@ -329,17 +329,153 @@ button:hover {
     </div>
   </div>
   
-  <div class="setting-group">
-    <h2>Avatar Widget</h2>
-    <div class="button-group">
-      <!--<button onclick="setAvatar('./panels/VRM')">Akari</button>-->
-      <button onclick="setAvatar('./panels/VRM2')">Kumoharu</button>
-      <button onclick="setAvatar('./panels/VRM2CA-01')">CA-01</button>
-      <button onclick="setAvatar('./panels/VRM2Riko')">Riko (by Rayen Feng, YT@JustRayen)</button>
-      <!--<button onclick="setAvatar('./panels/liteVRM')">Akari (lite)</button>-->
-      <button onclick="setAvatar('./panels/feature_disabled')">Disable VRM Avatar</button>
-    </div>
-  </div>
+<div class="setting-group">
+            <h2>Avatar Widget</h2>
+            <div class="button-group">
+                <!--<button onclick="setAvatar('./panels/VRM')">Akari</button>-->
+                <button onclick="setAvatar('./panels/VRM2')">Kumoharu</button>
+                <button onclick="setAvatar('./panels/VRM2CA-01')">CA-01</button>
+                <button onclick="setAvatar('./panels/VRM2CA-02')">CA-02</button>
+                <button onclick="setAvatar('./panels/VRM2Riko')">Riko (by Rayen Feng, YT@JustRayen)</button>
+                <!--<button onclick="setAvatar('./panels/liteVRM')">Akari (lite)</button>-->
+                <button onclick="setAvatar('./panels/feature_disabled')">Disable VRM Avatar</button>
+            </div>
+            <br>
+            <h4>Max frame time: (decrease to save resources)</h4>
+            <br>
+            <div class="button-group">
+                <button id="FTButtonSubtract">-</button>
+                <h1 id="frameTimeElement">40</h1>
+                <h3>ms</h3>
+                <button id="FTButtonAdd">+</button>
+            </div>
+            <br>
+            <h4>Frame rate: (default is 24)</h4>
+            <br>
+            <div class="button-group">
+                <button id="FPSButtonSubtract">-</button>
+                <h1 id="FPSElement">24</h1>
+                <h3>FPS</h3>
+                <button id="FPSButtonAdd">+</button>
+            </div>
+            <script>
+                // --- Frame Time Controls ---
+                const frameTimeElement = document.getElementById('frameTimeElement');
+                const FTButtonAdd = document.getElementById('FTButtonAdd');
+                const FTButtonSubtract = document.getElementById('FTButtonSubtract');
+                const FT_MIN = 10, FT_MAX = 200, FT_STEP = 5;
+
+                // --- FPS Controls ---
+                const FPSElement = document.getElementById('FPSElement');
+                const FPSButtonAdd = document.getElementById('FPSButtonAdd');
+                const FPSButtonSubtract = document.getElementById('FPSButtonSubtract');
+                const FPS_MIN = 1, FPS_MAX = 120, FPS_STEP = 1;
+
+                // Load from localStorage or defaults
+                function loadFrameSettings() {
+                    let ft = parseInt(localStorage.getItem('maxFrameTime')) || 40;
+                    let fps = parseInt(localStorage.getItem('frameRate')) || 24;
+                    ft = Math.min(Math.max(ft, FT_MIN), FT_MAX);
+                    fps = Math.min(Math.max(fps, FPS_MIN), FPS_MAX);
+                    frameTimeElement.textContent = ft;
+                    FPSElement.textContent = fps;
+                }
+                function setFrameTime(val) {
+                    // Calculate max feasible frame time based on current FPS
+                    let fps = parseInt(FPSElement.textContent);
+                    let maxFeasible = Math.floor(1000 / fps);
+                    let cappedMax = Math.min(FT_MAX, maxFeasible);
+                    if (val > cappedMax) {
+                        showToast(`Frame time too high for ${fps} FPS (max ${cappedMax} ms)`);
+                        val = cappedMax;
+                    }
+                    val = Math.max(val, FT_MIN);
+                    frameTimeElement.textContent = val;
+                    localStorage.setItem('maxFrameTime', val);
+                }
+
+                function setFPS(val) {
+                    val = Math.min(Math.max(val, FPS_MIN), FPS_MAX);
+                    // Calculate max feasible frame time for new FPS
+                    let maxFeasible = Math.floor(1000 / val);
+                    let ft = parseInt(frameTimeElement.textContent);
+                    if (ft > maxFeasible) {
+                        showToast(`Frame time too high for ${val} FPS (max ${maxFeasible} ms)`);
+                        setFrameTime(maxFeasible);
+                    }
+                    FPSElement.textContent = val;
+                    localStorage.setItem('frameRate', val);
+                }
+
+                // Button hold logic
+                function setupHoldButton(btn, getValue, setValue, step, min, max, direction) {
+                    let interval = null;
+                    let timeout = null;
+                    function changeValue() {
+                        let val = getValue();
+                        val += direction * step;
+                        val = Math.min(Math.max(val, min), max);
+                        setValue(val);
+                    }
+                    btn.addEventListener('mousedown', () => {
+                        changeValue();
+                        timeout = setTimeout(() => {
+                            interval = setInterval(changeValue, 80);
+                        }, 400);
+                    });
+                    btn.addEventListener('mouseup', () => {
+                        clearTimeout(timeout);
+                        clearInterval(interval);
+                    });
+                    btn.addEventListener('mouseleave', () => {
+                        clearTimeout(timeout);
+                        clearInterval(interval);
+                    });
+                    btn.addEventListener('touchstart', (e) => {
+                        e.preventDefault();
+                        changeValue();
+                        timeout = setTimeout(() => {
+                            interval = setInterval(changeValue, 80);
+                        }, 400);
+                    }, {passive: false});
+                    btn.addEventListener('touchend', () => {
+                        clearTimeout(timeout);
+                        clearInterval(interval);
+                    });
+                }
+
+                // Setup frame time buttons
+                setupHoldButton(
+                    FTButtonAdd,
+                    () => parseInt(frameTimeElement.textContent),
+                    setFrameTime,
+                    FT_STEP, FT_MIN, FT_MAX, +1
+                );
+                setupHoldButton(
+                    FTButtonSubtract,
+                    () => parseInt(frameTimeElement.textContent),
+                    setFrameTime,
+                    FT_STEP, FT_MIN, FT_MAX, -1
+                );
+
+                // Setup FPS buttons
+                setupHoldButton(
+                    FPSButtonAdd,
+                    () => parseInt(FPSElement.textContent),
+                    setFPS,
+                    FPS_STEP, FPS_MIN, FPS_MAX, +1
+                );
+                setupHoldButton(
+                    FPSButtonSubtract,
+                    () => parseInt(FPSElement.textContent),
+                    setFPS,
+                    FPS_STEP, FPS_MIN, FPS_MAX, -1
+                );
+
+                // Initialize values on load
+                loadFrameSettings();
+            </script>
+        </div>
 
   <div class="setting-group">
     <h2>Chat History</h2>
