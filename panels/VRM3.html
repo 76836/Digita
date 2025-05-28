@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>VRM viewer (CA-01 edition v1.4 exp)</title>
+  <title>VRM viewer (CA-01 edition v1.4b)</title>
   <!--<link rel="stylesheet" href="styles.css">-->
   <script type="importmap">
   {
@@ -86,6 +86,7 @@ body {
   </div>
   <script type="module">
 //yes i vibe coded with claude, yes it barely works, yet this file isnt near finished, but guess what? it almost works... I'll take it for now! I can fix this all later, and when i'm done i'll have just what i wanted.
+//Update: im gonna lock in soon, it works basically perfectly now...
     
 
 import * as THREE from 'three';
@@ -407,7 +408,13 @@ class PerformanceManager {
     this.pixelRatio = PIXEL_RATIO_MIN;
     this.bloomEnabled = false;
     this.shadowEnabled = false;
-    this.actualRenderTime = 0; // Track actual rendering time, not frame interval
+    this.actualRenderTime = 0;
+    
+    // Add stability controls
+    this.stableFrameCount = 0;
+    this.requiredStableFrames = 10; // Require 10 stable frames before adjusting
+    this.lastDirection = 0; // -1 for decreasing, 1 for increasing, 0 for none
+    this.adjustmentCooldown = 1000; // 1 second minimum between adjustments
   }
 
   // Call this with the actual time spent rendering (not including frame rate limiting)
@@ -415,10 +422,8 @@ class PerformanceManager {
     const now = performance.now();
     
     if (actualRenderTime !== null) {
-      // Use the provided actual render time instead of calculating from intervals
       this.recordFrameTime(actualRenderTime);
     } else {
-      // Fallback to old behavior if no render time provided
       let dt = now - (this.lastRender || now);
       this.lastRender = now;
       this.recordFrameTime(dt);
@@ -433,37 +438,81 @@ class PerformanceManager {
 
   adjustQuality() {
     const now = performance.now();
-    if (now - this.lastAdjust < 250) return;
-    this.lastAdjust = now;
-
-    let over = this.emaFrameTime > TARGET_LATENCY + 2;
-    let under = this.emaFrameTime < TARGET_LATENCY - 2;
-
+    
+    // Increased minimum time between adjustments to prevent flickering
+    if (now - this.lastAdjust < this.adjustmentCooldown) return;
+    
+    // Use wider thresholds to create hysteresis and prevent oscillation
+    const upperThreshold = TARGET_LATENCY + 8; // Increased from +2
+    const lowerThreshold = TARGET_LATENCY - 8; // Increased from -2
+    
+    let over = this.emaFrameTime > upperThreshold;
+    let under = this.emaFrameTime < lowerThreshold;
+    
+    // Only adjust if we have a clear direction and it's been stable
     if (over && this.pixelRatio > PIXEL_RATIO_MIN) {
-      this.pixelRatio *= 0.97;
-      if (this.pixelRatio < PIXEL_RATIO_MIN) this.pixelRatio = PIXEL_RATIO_MIN;
+      // Check if we're switching directions (oscillating)
+      if (this.lastDirection === 1) {
+        this.stableFrameCount = 0; // Reset if we're switching directions
+      }
+      
+      this.stableFrameCount++;
+      if (this.stableFrameCount >= this.requiredStableFrames) {
+        // Make smaller adjustments to prevent overshooting
+        this.pixelRatio *= 0.95; // Reduced from 0.97
+        if (this.pixelRatio < PIXEL_RATIO_MIN) this.pixelRatio = PIXEL_RATIO_MIN;
+        this.lastDirection = -1;
+        this.lastAdjust = now;
+        this.stableFrameCount = 0;
+      }
     } else if (under && this.pixelRatio < PIXEL_RATIO_MAX) {
-      this.pixelRatio *= 1.025;
-      if (this.pixelRatio > PIXEL_RATIO_MAX) this.pixelRatio = PIXEL_RATIO_MAX;
+      // Check if we're switching directions (oscillating)
+      if (this.lastDirection === -1) {
+        this.stableFrameCount = 0; // Reset if we're switching directions
+      }
+      
+      this.stableFrameCount++;
+      if (this.stableFrameCount >= this.requiredStableFrames) {
+        // Make smaller adjustments to prevent overshooting
+        this.pixelRatio *= 1.02; // Reduced from 1.025
+        if (this.pixelRatio > PIXEL_RATIO_MAX) this.pixelRatio = PIXEL_RATIO_MAX;
+        this.lastDirection = 1;
+        this.lastAdjust = now;
+        this.stableFrameCount = 0;
+      }
+    } else {
+      // Reset stable frame count if we're in the acceptable range
+      this.stableFrameCount = 0;
+      this.lastDirection = 0;
     }
 
     this.pixelRatio = Math.max(PIXEL_RATIO_MIN, Math.min(PIXEL_RATIO_MAX, this.pixelRatio));
-    if (typeof renderer !== "undefined") renderer.setPixelRatio(this.pixelRatio);
+    
+if (typeof renderer !== "undefined") {
+  const currentRatio = renderer.getPixelRatio();
+  if (Math.abs(this.pixelRatio - currentRatio) > 0.05) {
+    // Defer pixel ratio change to next frame to prevent flash
+    requestAnimationFrame(() => {
+      renderer.setPixelRatio(this.pixelRatio);
+      shouldRender = true; // Force a render after the change
+    });
+  }
+}
 
-    // Enable/disable bloom based on pixel ratio
+    // Use wider hysteresis for bloom and shadow toggles
     if (typeof bloomPass !== "undefined") {
-      if (!this.bloomEnabled && this.pixelRatio > BLOOM_THRESHOLDS.enable) {
+      if (!this.bloomEnabled && this.pixelRatio > BLOOM_THRESHOLDS.enable + 0.1) { // Added buffer
         bloomPass.enabled = true;
         this.bloomEnabled = true;
-      } else if (this.bloomEnabled && this.pixelRatio < BLOOM_THRESHOLDS.disable) {
+      } else if (this.bloomEnabled && this.pixelRatio < BLOOM_THRESHOLDS.disable - 0.1) { // Added buffer
         bloomPass.enabled = false;
         this.bloomEnabled = false;
       }
     }
 
-    // Enable/disable shadow based on pixel ratio
+    // Use wider hysteresis for shadow toggles
     if (typeof scene !== "undefined") {
-      if (!this.shadowEnabled && this.pixelRatio > SHADOW_THRESHOLDS.enable) {
+      if (!this.shadowEnabled && this.pixelRatio > SHADOW_THRESHOLDS.enable + 0.1) { // Added buffer
         scene.traverse(obj => {
           if (obj.isDirectionalLight) {
             obj.castShadow = true;
@@ -471,7 +520,7 @@ class PerformanceManager {
           }
         });
         this.shadowEnabled = true;
-      } else if (this.shadowEnabled && this.pixelRatio < SHADOW_THRESHOLDS.disable) {
+      } else if (this.shadowEnabled && this.pixelRatio < SHADOW_THRESHOLDS.disable - 0.1) { // Added buffer
         scene.traverse(obj => {
           if (obj.isDirectionalLight) {
             obj.castShadow = false;
