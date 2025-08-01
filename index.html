@@ -914,7 +914,8 @@ const DEFAULT_TAB_URLS = {
     'voice-input': './vosk',
     'voice-output': './vits',
     llm: './llama',
-    settings: './settings'
+    settings: './settings',
+    catalog: './panels/catalog'
 };
 
 // Tab-specific localStorage keys
@@ -923,7 +924,8 @@ const TAB_URL_KEYS = {
     'voice-input': 'voiceInputUrl',
     'voice-output': 'voiceOutputUrl',
     llm: 'llmUrl',
-    settings: 'settingsUrl'
+    settings: 'settingsUrl',
+    catalog: 'catalogUrl'
 };
 
 // Startup check
@@ -1062,7 +1064,7 @@ class TabManager {
             this.tabs[tabId] = {
                 button,
                 panel,
-                loaded: tabId === 'server' || tabId === 'xmenu' || tabId === 'catalog' // Server, catalog, and extensions tabs are not iframes
+                loaded: tabId === 'server' || tabId === 'xmenu' // Server, and extensions tabs are not iframes
             };
 
             button.addEventListener('click', () => this.switchTab(tabId));
