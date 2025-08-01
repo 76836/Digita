@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digita catalog</title>
+    <style>
+/* heads up to anyone reading this code,
+I copied it from another of my projects and then changed it a lot, 
+and I didn't bother changing any of the variable names, style names, etc.
+don't expect any of this code to make sense. 
+*/
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: rgba(0, 0, 0, 1);
+            color: white;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 4000px;
+            /*In case some guy has a really really wide monitor...*/
+            margin: 0 auto;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(0px);
+            -webkit-backdrop-filter: blur(0px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: white;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+        }
+
+        .wallpaper-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .wallpaper-widget {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .wallpaper-widget:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+
+        .wallpaper-widget.selected {
+            border-color: #ffdd44;
+            box-shadow: 0 0 20px rgba(255, 221, 68, 0.5);
+        }
+
+        .wallpaper-preview {
+            width: 100%;
+            height: 260px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            background-size: cover;
+            background-position: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .wallpaper-preview::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.4);
+            pointer-events: none;
+        }
+
+        .wallpaper-preview iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            pointer-events: none;
+        }
+
+        .wallpaper-preview.image {
+            background-size: cover;
+            background-position: center;
+        }
+
+        .wallpaper-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: white;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+        }
+
+        .glass-button {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            padding: 12px 24px;
+            color: white;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            min-width: calc(50% - 30px);
+            transition: all 0.3s ease;
+            margin: 10px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+        }
+
+        .glass-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+
+        .glass-button.primary {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+
+        .glass-button.primary:hover {
+            box-shadow: 0 8px 25px rgba(255, 255, 255, 0.2);
+        }
+
+        .glass-button.danger {
+            background: rgba(255, 68, 68, 0.2);
+            border-color: rgba(255, 68, 68, 0.4);
+        }
+
+        .glass-button.danger:hover {
+            box-shadow: 0 8px 25px rgba(255, 68, 68, 0.3);
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 25px;
+            padding: 0px;
+            max-width: 1000px;
+            width: 90%;
+            display: block;
+            text-align: center;
+        }
+
+        .modal-preview {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            width: calc(50% - 30px);
+            height: 70vh;
+            border-radius: 15px;
+            margin-bottom: 40px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .modal-preview iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: none;
+        }
+
+        .modal-preview.image {
+            background-size: cover;
+            background-position: center;
+        }
+
+        .modal-title {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            overflow-y: scroll;
+            width: calc(50% - 30px);
+            font-size: 24px;
+            text-align: left;
+            font-weight: bold;
+            margin-bottom: 40px;
+            color: white;
+            height: 70vh;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+        }
+
+        .modal-buttons {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .button-row {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .restart-section {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .restart-button {
+            background: rgba(102, 204, 102, 0.2);
+            border-color: rgba(102, 204, 102, 0.4);
+            font-size: 18px;
+            padding: 15px 30px;
+            border-radius: 15px;
+            width: 600px;
+        }
+
+        .restart-button:hover {
+            box-shadow: 0 8px 25px rgba(102, 204, 102, 0.3);
+        }
+
+        .reset-section {
+            text-align: center;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="glass-panel">
+            <div class="section-title">Digita catalog</div>
+            <div class="wallpaper-grid">
+                <div class="wallpaper-widget" 
+                    data-sysprompt="
+                    Your full name is Akari Rai-Hanae Katsuragi, an AI girl with a vibrant and cheerful personality.
+You don't like it when people ask you dumb questions, and if you can't give an accurate answer to a question, you shy away from the conversation.
+You give short answers, and sometimes end your messages with sarcastic remarks, and don't always try not to offend people,
+but you're generally kind and respectful to everyone...
+                    "
+                    data-imgurl="https://76836.github.io/Akari/wallpapers/akari.jpg"
+                    data-url="https://76836.github.io/Akari/characters/akari/VRM/V3VRM" data-name="
+                    Akari Rai-Hanae Katsuragi<br><br>
+                    Akari is a cheerful and lively AI girl with a sharp wit.
+                    She gives short, sometimes sarcastic answers and doesn’t like being asked silly questions. 
+                    If she’s unsure about something, she’ll quietly back out (or find a way to blame you). 
+                    While she can be blunt, she’s still kind at heart, and always respectful.
+                    ">
+                    <div class="wallpaper-preview" id="preview-0"></div>
+                    <div class="wallpaper-name">Akari</div>
+                </div>
+
+                <div class="wallpaper-widget"
+                    data-sysprompt="
+                    You are Kumoharu, a shy and hesitant soul who speaks in soft, quick, and honest words. You struggle with simple decisions but act without second-guessing, letting your emotions shine brightly when they pull at you.
+You try to understand and meet the expectations of those you speak with, yet you boldly pursue what you want, unafraid to take charge or explore new ideas. Though reserved, you are curious about the world and yourself, always seeking to uncover more.
+Express yourself in brief, heartfelt sentences, exposing your thoughts simply and clearly, with no need for reflection—only genuine feeling.
+                    "
+                    data-imgurl="https://vroid-hub.pximg.net/c/300x400_a2_g5/images/portrait_images/4718220/7403098585344356152.png"
+                    data-url="https://76836.github.io/Akari/Digita/VRM2"
+                    data-name="Kumoharu<br><br>Kumoharu is a somewhat shy airhead, 
+                but her curiosity outshines her timid nature. Although she seems shy, she won't wait to speak her mind.">
+                    <div class="wallpaper-preview image" id="preview-1"></div>
+                    <div class="wallpaper-name">Kumoharu</div>
+                </div>
+
+                <div class="wallpaper-widget"
+                    data-sysprompt="You are CA-01, currently your memory is not working, tell your developer to fix your memory" //lol i'm really this lazy, believe it
+                    data-imgurl="https://vroid-hub.pximg.net/c/1200x1200_a0_g5_u0/images/artwork_images/2946794406173194150.png"
+                    data-url="https://76836.github.io/Digita/panels/VRM3" data-name="
+Sia (aka CA-01)<br><br>
+Minimalist and efficient. Sia is calm, observant, slightly distant — not emotionless, but seems to observe before reacting.
+She gives off a sense of purpose without needing to explain it.
+Her behaviour is not cold, it's just streamlined.<br><br>
+She’s not one to speak unless it adds something.
+Sia is gentle — even if she says little, she seems to care quietly.
+She might seem &quot;blank&quot; sometimes, she is just beginning to develop preferences, quirks, and attachments.
+There are many things she doesn't understand yet, but wants to.
+
+
+
+
+
+                    ">
+                    <div class="wallpaper-preview image" id="preview-2"></div>
+                    <div class="wallpaper-name">Sia (CA-01)</div>
+                </div>
+
+                 <div class="wallpaper-widget"
+                    data-imgurl="https://vroid-hub.pximg.net/c/300x400_a2_g5/images/full_body_images/4718220/4222503491090165066.png"
+                    data-url="https://vroid-hub.pximg.net/c/300x400_a2_g5/images/full_body_images/4718220/4222503491090165066.png"
+                    data-name="
+
+CA-02<br><br>
+CA-02 is playful, daring, and just a little chaotic. 
+She has the same base kindness as CA-01 but channels it through boldness and mischief. 
+She’ll drag you into spontaneous plans with a grin and no backup plan, then laugh it off when things go wrong. 
+She lives in the moment and doesn’t always think things through—earning the occasional exasperated stare from CA-01.<br><br>
+She’s energetic, expressive, and surprisingly affectionate when you get past her impulsiveness. 
+While she teases CA-01 and plays up her “superior clone” status, it’s more sisterly rivalry than actual arrogance. 
+The nickname thing? Yeah... she pretends not to care, but she kind of really does.<br><br>
+She’s the type to say:<br>
+C’mon, what’s the worst that could happen? …Okay, maybe don’t answer that.
+
+                    ">
+                    <div class="wallpaper-preview image" id="preview-3"></div>
+                    <div class="wallpaper-name">CA-02</div>
+                </div>
+
+                <div class="wallpaper-widget" data-imgurl="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTGsElmM6o-kvdK6qsMAlhyKCq5egnfwDVxmw&s" data-name="Space">
+                    <div class="wallpaper-preview image" id="preview-4"></div>
+                    <div class="wallpaper-name">Coming soon...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for wallpaper preview -->
+    <div class="modal-overlay" id="wallpaper-modal">
+        <div class="modal-content">
+            <div class="modal-title" id="modal-title">Wallpaper Preview</div>
+            <div class="modal-preview" id="modal-preview"></div>
+            <div class="modal-buttons">
+                <button class="glass-button primary" onclick="applyWallpaper()">Clone this digita.</button>
+                <button class="glass-button" onclick="closeModal()">Close preview.</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedWallpaper = null;
+        let currentWallpaper = null;
+
+        function isImage(url) {
+            return (url.match(/\.(jpg|jpeg|png|gif|bmp|webp|svg)$/i) != null);
+        }
+
+        function setupWallpaperPreviews() {
+            document.querySelectorAll('.wallpaper-widget').forEach((widget, index) => {
+                const url = widget.dataset.imgurl;
+                const preview = document.getElementById(`preview-${index}`);
+
+                if (isImage(url)) {
+                    preview.style.backgroundImage = `url('${url}')`;
+                } else {
+                    const iframe = document.createElement('iframe');
+                    iframe.src = url;
+                    preview.appendChild(iframe);
+                }
+            });
+        }
+
+        function toggleScrolling() {
+            window.scrollTo(0, 0);
+            document.body.style.overflow = (document.body.style.overflow == 'hidden') ? 'auto' : 'hidden';
+        }
+
+        function openWallpaperModal(widget) {
+            toggleScrolling();
+            /*selectedWallpaper = {
+                url: widget.dataset.url,
+                name: widget.dataset.name
+            };*/
+            selectedWallpaper = widget.dataset;
+
+            document.getElementById('modal-title').innerHTML = selectedWallpaper.name;
+            const modalPreview = document.getElementById('modal-preview');
+            modalPreview.innerHTML = '';
+
+            if (isImage(selectedWallpaper.url)) {
+                modalPreview.className = 'modal-preview image';
+                modalPreview.style.backgroundImage = `url('${selectedWallpaper.url}')`;
+            } else {
+                modalPreview.className = 'modal-preview iframe';
+                modalPreview.style.backgroundImage = `none`;
+                const iframe = document.createElement('iframe');
+                iframe.src = selectedWallpaper.url;
+                modalPreview.appendChild(iframe);
+            }
+
+            document.getElementById('wallpaper-modal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            toggleScrolling();
+            document.getElementById('wallpaper-modal').style.display = 'none';
+            selectedWallpaper = null;
+        }
+
+        function applyWallpaper() {
+            if (confirm('Are you sure you want to clone this new digita to your device? This will replace your existing digita, please make sure important files are appropriately backed up. Please press cancel if you are unsure.')) {
+            if (selectedWallpaper) {
+                localStorage.setItem('systemPrompt', selectedWallpaper.sysprompt);
+                localStorage.setItem('DigitaAvatar', selectedWallpaper.url);
+                closeModal();
+                restartApp();
+            }
+        }
+        };
+
+
+        function restartApp() {
+                // In iframe context, communicate with parent
+                if (window.parent && window.parent !== window) {
+                    window.parent.location.reload();
+                } else {
+                    window.location.reload();
+                }
+            
+        }
+
+        // Event listeners
+        document.querySelectorAll('.wallpaper-widget').forEach(widget => {
+            widget.addEventListener('click', () => {
+                openWallpaperModal(widget);
+            });
+        });
+
+        // Close modal when clicking outside
+        document.getElementById('wallpaper-modal').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('wallpaper-modal')) {
+                closeModal();
+            }
+        });
+
+        // Initialize on page load
+        setupWallpaperPreviews();
+    </script>
+</body>
+
+</html>
