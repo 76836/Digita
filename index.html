@@ -538,7 +538,7 @@ html {
 
     <div class="sidebar">
           <button class="tab-button active" data-tab="server">
-            Digita v0.9
+            Digita v0.9b
           </button>
         
           <button class="tab-button" data-tab="settings">
@@ -559,6 +559,10 @@ html {
 
           <button class="tab-button" data-tab="voice-output">
             Voice
+          </button>
+
+          <button class="tab-button" data-tab="catalog">
+            Catalog
           </button>
         
           <button class="tab-button" data-tab="xmenu">
@@ -741,6 +745,10 @@ window.addEventListener('storage', (event) => {
 
         <div class="panel" id="llm">
             <iframe data-src="./panels/feature_disabled.html" frameborder="0"></iframe>
+        </div>
+
+        <div class="panel" id="catalog">
+            <iframe data-src="./panels/catalog.html" frameborder="0"></iframe>
         </div>
         
         <div class="panel" id="xmenu">
@@ -1054,7 +1062,7 @@ class TabManager {
             this.tabs[tabId] = {
                 button,
                 panel,
-                loaded: tabId === 'server' || tabId === 'xmenu' // Server and extensions tabs are not iframes
+                loaded: tabId === 'server' || tabId === 'xmenu' || tabId === 'catalog' // Server, catalog, and extensions tabs are not iframes
             };
 
             button.addEventListener('click', () => this.switchTab(tabId));
