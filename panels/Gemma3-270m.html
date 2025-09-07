@@ -150,7 +150,7 @@
         }
 
         #send-button {
-            background: rgb(20, 184, 166);
+            background: rgb(20, 166, 20);
             color: #000;
         }
 
@@ -187,9 +187,10 @@
             background: #242424;
             color: #fff;
             padding: 0.5rem 1rem;
-            border: 1px solid #2a2a2a;
+            border: 0px solid #2a2a2a;
             border-radius: 8px;
             cursor: pointer;
+            width:100%
         }
 
         #loading {
@@ -223,7 +224,7 @@
     <div class="container">
         <div class="header">
             <i data-lucide="message-circle" style="color: rgb(45, 212, 191)"></i>
-            <h1>Gemma3 270m (UD-Q6_K_XL) on Wllama (v1.0) WASM_CPU</h1>
+            <h1>Gemma3 270m (UD-Q6_K_XL) on Wllama WASM_CPU (panel v2.0)</h1>
             <div class="status">
                 <div class="status-dot"></div>
                 <span id="status-text">Offline</span>
@@ -238,7 +239,7 @@
             </button>
         </div>
 
-        <div id="model-info"></div>
+        <div id="model-info">Please load a model...</div>
         <div id="messages"></div>
         <div id="loading"></div>
 
@@ -258,7 +259,7 @@
     </div>
 
    <script type="module">
-    import { Wllama } from 'https://cdn.jsdelivr.net/npm/@wllama/wllama@2.1.0/esm/wllama.js';
+    import { Wllama } from 'https://cdn.jsdelivr.net/npm/@wllama/wllama@2.3.0/esm/index.js';
 
     let wllama;
     let isModelLoaded = false;
@@ -438,8 +439,8 @@ async function tokenizeAndCache(message) {
 
         try {
             wllama = new Wllama({
-                'single-thread/wllama.wasm': 'https://cdn.jsdelivr.net/npm/@wllama/wllama@2.1.0/esm/single-thread/wllama.wasm',
-                'multi-thread/wllama.wasm': 'https://cdn.jsdelivr.net/npm/@wllama/wllama@2.1.0/esm/multi-thread/wllama.wasm'
+                'single-thread/wllama.wasm': 'https://cdn.jsdelivr.net/npm/@wllama/wllama@2.3.0/esm/single-thread/wllama.wasm',
+                'multi-thread/wllama.wasm': 'https://cdn.jsdelivr.net/npm/@wllama/wllama@2.3.0/esm/multi-thread/wllama.wasm'
             });
 
             await wllama.loadModelFromHF(
