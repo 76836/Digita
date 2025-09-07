@@ -89,7 +89,7 @@ button:before {
 button:hover:before {
   left: 100%;
 }
-
+/*
 button:hover {
   background: linear-gradient(45deg,
     rgba(255,0,0,0.2),
@@ -99,7 +99,7 @@ button:hover {
   animation: rgbGlow 2s infinite;
   transform: translateY(-2px);
 }
-
+*/
 .save-list {
   max-height: 300px;
   overflow-y: auto;
@@ -315,8 +315,10 @@ button:hover {
       <button onclick="setLLM('./panels/llama')">Llama 3.2 1B</button>
       <button onclick="setLLM('./panels/granite')">IBM Granite 1B</button>
       <button onclick="setLLM('./panels/gemini')">Gemini API</button>
+      <button onclick="setLLM('./panels/Gemma3-270m')">Gemma3 270M</button>
       <button onclick="setLLM('./panels/smollm')">Smollm 135M</button>
-      <button onclick="setLLM('./panels/ReynaRP620MQ2K')">Reyna 620M Q2K</button>
+      <!--<button onclick="setLLM('./panels/ReynaRP620MQ2K')">Reyna 620M Q2K</button>-->
+      <!--Replacing ReynaRP with Gemma3 because why 620MQ2 when you can 270MQ6?-->
       <button onclick="setLLM('./panels/feature_disabled')">Disable this feature.</button>
     </div>
   </div>
