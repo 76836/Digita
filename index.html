@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
     <head>
-    <title>Digita v0.9b</title>
+    <title>Digita v0.9c</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -538,7 +538,7 @@ html {
 
     <div class="sidebar">
           <button class="tab-button active" data-tab="server">
-            Digita v0.9b
+            Digita v0.9c
           </button>
         
           <button class="tab-button" data-tab="settings">
@@ -546,7 +546,7 @@ html {
           </button>
       
           <button class="tab-button" data-tab="chat">
-            Integrated UI
+            Chat UI
           </button>
       
           <button class="tab-button" data-tab="voice-input">
@@ -565,9 +565,13 @@ html {
             Catalog
           </button>
         
-          <button class="tab-button" data-tab="xmenu">
+          <!--<button class="tab-button" data-tab="xmenu">
             Extensions
           </button>
+
+          we are going to forget about this feature for a little while I think...
+        
+          -->
         
           <button class="tab-button" onclick="shutdown();">
             ( ' ) Shutdown
@@ -875,17 +879,20 @@ function showNotification(title, message, options = {}) {
             };
             //loadscreen("Akari Digita starting...");
 
-    
+var persistanceGranted;
 if (navigator.storage && navigator.storage.persist) {
     navigator.storage.persist().then(granted => {
         if (granted) {
             showNotification('[OK]', 'Persistent storage granted!', {borderColors: ['#00FFFF', '#00FF00', '#0000FF', '#FFFFFF'] });
+            persistanceGranted = true;
         } else {
             showNotification('[Error]', 'Persist cache failed, defaulting to temporary storage. Cache may be cleared.', {borderColors: ['#0000FF', '#0000ff', '#0000FF', '#0000ff'] });
+            persistanceGranted = false;
         }
     });
 } else {
     showNotification('[Error]', "Persistent storage API not supported.", {borderColors: ['#0000FF', '#0000ff', '#0000FF', '#0000ff'] });
+    persistanceGranted = false;
 }
 
 
@@ -1025,7 +1032,9 @@ function initializePage() {
         case 'full':
             // Load all iframes and extensions
             document.querySelectorAll('.panel iframe').forEach(iframe => {
-                iframe.src = iframe.getAttribute('data-src');
+                const ifsc = iframe.src;
+                if (!ifsc.includes('/services/')){//only applies lazy loading preferance to non-service iframes, why? because my background wasn't loading and this seems to fix it.
+                    iframe.src = iframe.getAttribute('data-src');};
             });
             loadExternalScripts(extensions);
             break;
@@ -1144,9 +1153,9 @@ async function shutdown() {
         const estimate = await navigator.storage.estimate();
         const usagePercentage = (estimate.usage / estimate.quota) * 100;
 
-        if (usagePercentage > 80) {
+        if ((usagePercentage > 80) || !persistanceGranted) {
             // Low storage detected
-            const confirmShutdown = confirm('Warning: Your device is low on storage and might attempt to delete Digita system files after shutdown. Do you still want to proceed? (Digita will automatically re-download deleted files when needed, chat history will not be lost.)');
+            const confirmShutdown = confirm('Warning: Your device is low on storage (or has denied Digita caching for another reason) and might attempt to delete Digita system files after shutdown. Do you still want to proceed? (Digita will automatically re-download deleted files when needed, chat history will not be lost.)');
             if (!confirmShutdown) {
                 // Cancel shutdown
                 splash.remove();
