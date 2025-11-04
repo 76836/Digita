@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wllama Chat</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background: #000;
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+        }
+
+        .container {
+            background: #121212;
+            width: 100%;
+            max-width: 800px;
+            border-radius: 16px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #4285F4, #EA4335, #FBBC05, #34A853);
+            background-size: 200% 100%;
+            animation: gradientMove 4s linear infinite;
+        }
+
+        @keyframes gradientMove {
+            0% { background-position: 100% 0; }
+            100% { background-position: -100% 0; }
+        }
+
+        .header {
+            background: #1a1a1a;
+            padding: 1rem;
+            border-bottom: 1px solid #2a2a2a;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-left: auto;
+            padding: 0.5rem 1rem;
+            background: #242424;
+            border-radius: 20px;
+            font-size: 0.875rem;
+        }
+
+        /* Add XST switch styles */
+        .xst-switch {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-right: 1rem;
+        }
+
+        .xst-toggle {
+            position: relative;
+            width: 50px;
+            height: 24px;
+        }
+
+        .xst-toggle input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .xst-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #242424;
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .xst-slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .xst-slider {
+            background-color: rgb(45, 212, 191);
+        }
+
+        input:checked + .xst-slider:before {
+            transform: translateX(26px);
+        }
+
+        #messages {
+            height: 400px;
+            overflow-y: auto;
+            padding: 1rem;
+            background: #1a1a1a;
+        }
+
+        .message {
+            margin-bottom: 1rem;
+            padding: 0.75rem;
+            border-radius: 8px;
+            max-width: 85%;
+        }
+
+        .user-message {
+            background: #242424;
+            margin-left: auto;
+        }
+
+        .assistant-message {
+            background: rgba(66, 133, 244, 0.2);
+            margin-right: auto;
+        }
+      
+        .system-message {
+            background: #2a2a2a;
+            color: rgb(255,255,255, 0.67);
+            margin: 0.5rem auto;
+            font-style: italic;
+            text-align: center;
+        }
+
+        
+        .input-area {
+            padding: 1rem;
+            background: #1a1a1a;
+            border-top: 1px solid #2a2a2a;
+        }
+
+        .input-group {
+            display: grid;
+            grid-template-columns: 1fr auto auto;
+            gap: 0.75rem;
+        }
+
+        #user-input {
+            background: #242424;
+            border: 1px solid #2a2a2a;
+            color: #fff;
+            padding: 0.75rem;
+            border-radius: 8px;
+            outline: none;
+        }
+
+        .button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        #send-button {
+            background: rgb(20, 166, 20);
+            color: #000;
+        }
+
+        #send-button:disabled {
+            background: #2a2a2a;
+            color: #666;
+            cursor: not-allowed;
+        }
+
+        #clear-button {
+            background: #242424;
+            color: #fff;
+        }
+
+        #setup-container {
+            padding: 1rem;
+            background: #1a1a1a;
+            border-bottom: 1px solid #2a2a2a;
+        }
+
+        #system-prompt {
+            width: 100%;
+            background: #242424;
+            border: 1px solid #2a2a2a;
+            color: #fff;
+            padding: 0.75rem;
+            border-radius: 8px;
+            margin: 0.5rem 0;
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        #save-prompt {
+            background: #040424;
+            color: #fff;
+            padding: 0.5rem 1rem;
+            border: 0px solid #2a2a2a;
+            border-radius: 8px;
+            cursor: pointer;
+            width:100%;
+        }
+
+        #loading {
+            text-align: center;
+            padding: 1rem;
+            color: rgb(45, 212, 191);
+            display: none;
+        }
+
+        #model-info {
+            padding: 0.5rem 1rem;
+            color: #666;
+            font-size: 0.875rem;
+            background: #1a1a1a;
+            border-bottom: 1px solid #2a2a2a;
+        }
+
+        .load-model-button {
+            background: rgb(20, 184, 166);
+            color: #000;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 1rem auto;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <i data-lucide="message-circle" style="color: rgb(45, 212, 191)"></i>
+            <h1>Gemma3 1B (UD-Q6_K_XL) on Wllama WASM_CPU (panel v1.0)</h1>
+            <div class="xst-switch">
+                <span>XST</span>
+                <label class="xst-toggle">
+                    <input type="checkbox" id="xst-toggle">
+                    <span class="xst-slider"></span>
+                </label>
+            </div>
+            <div class="status">
+                <div class="status-dot"></div>
+                <span id="status-text">Offline</span>
+            </div>
+        </div>
+
+        <div id="setup-container">
+            <textarea id="system-prompt"></textarea>
+            <button id="save-prompt" class="button">
+                <i data-lucide="save"></i>
+                Save System Prompt
+            </button>
+        </div>
+
+        <div id="model-info">Please load a model...</div>
+        <div id="messages"></div>
+        <div id="loading"></div>
+
+        <div class="input-area">
+            <div class="input-group">
+                <input type="text" id="user-input" placeholder="Type your message...">
+                <button id="send-button" class="button" disabled>
+                    <i data-lucide="send"></i>
+                    Send
+                </button>
+                <button id="clear-button" class="button">
+                    <i data-lucide="trash-2"></i>
+                    Clear
+                </button>
+            </div>
+        </div>
+    </div>
+
+   <script type="module">
+            import { Wllama } from 'https://cdn.jsdelivr.net/npm/@wllama/wllama@2.3.0/esm/index.js';
+            import { XST } from '../services/xst.js';
+
+            let wllama;
+            let isModelLoaded = false;
+            let chatHistory = [];
+            let xst;
+            let xstRunning = false;
+
+            // XST initialization
+            const initXST = () => {
+                xst = new XST({ timeLimitMs: 600000 });
+                xst.onUserMessage = (text) => {
+                    addMessageToUI('assistant', text);
+                };
+            };
+
+            // XST toggle handler
+            document.getElementById('xst-toggle').addEventListener('change', async (e) => {
+                if (e.target.checked) {
+                    if (!xst) {
+                        initXST();
+                    }
+                    if (chatHistory.length > 0) {
+                        if (confirm('Enabling XST requires a chat reset. Continue?')) {
+                            clearButton.click();
+                            xstRunning = true;
+                            runSentienceLoop();
+                        } else {
+                            e.target.checked = false;
+                        }
+                    } else {
+                        xstRunning = true;
+                        runSentienceLoop();
+                    }
+                } else {
+                    xstRunning = false;
+                }
+            });
+
+            // XST sentience loop
+            async function runSentienceLoop() {
+                while (xstRunning && xst && !xst.isTimeUp()) {
+                    const toLLM = xst.getLLMMessage();
+                    try {
+                        const response = await wllama.createChatCompletion([
+                            { role: 'system', content: systemPromptInput.value.trim() },
+                            { role: 'user', content: toLLM }
+                        ]);
+                        
+                        const result = xst.processLLMResponse(response);
+                        if (result.error) {
+                            console.error('XST LLM error:', result.error);
+                            addMessageToUI('system', 'XST processing error occurred');
+                        }
+                    } catch (error) {
+                        console.error('XST loop error:', error);
+                    }
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+            }
+
+            // Function to build context efficiently
+  async function buildContext(messages) {
+    const systemMessage = { role: 'system', content: systemPromptInput.value.trim() };
+    const recentMessages = getRecentMessages(messages);
+    let tokenizedMessages = [];
+    
+    // First tokenize all existing messages
+    for (const msg of recentMessages) {
+        const tokens = await tokenizeAndCache(msg);
+        tokenizedMessages.push(tokens);
+    }
+    
+    // Then add system message tokens last to ensure fresh system prompt is used
+    const systemTokens = await tokenizeAndCache(systemMessage);
+    tokenizedMessages.unshift(systemTokens);
+    
+    return tokenizedMessages.flat();
+}
+
+            // Add model loading button
+            const addLoadModelButton = () => {
+                var button = document.createElement('button');
+                button.className = 'load-model-button';
+                button.innerHTML = '<i data-lucide="download"></i> Load Model';
+                messagesDiv.appendChild(button);
+
+                button.addEventListener('click', () => {
+                    button.remove();
+                    initWllama();
+                });
+            };
+
+            // Load chat history from localStorage
+            const loadChatHistory = () => {
+                const history = localStorage.getItem('chatHistory');
+                if (history) {
+                    chatHistory = JSON.parse(history);
+                    chatHistory.forEach(msg => addMessageToUI(msg.role, msg.content));
+                }
+            };
+
+            // Save chat history to localStorage
+            const saveChatHistory = () => {
+                localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
+            };
+
+            // Load system prompt from localStorage
+            const loadSystemPrompt = () => {
+                const prompt = localStorage.getItem('systemPrompt');
+                if (prompt) {
+                    systemPromptInput.value = prompt;
+                }
+            };
+
+            // Save system prompt to localStorage
+            savePromptButton.addEventListener('click', () => {
+                localStorage.setItem('systemPrompt', systemPromptInput.value);
+                addMessageToUI('system', 'System prompt saved successfully');
+            });
+
+            // Modified addMessageToUI function without streaming support
+            const addMessageToUI = (role, content) => {
+                const messageDiv = document.createElement('div');
+                messageDiv.classList.add('message', `${role}-message`);
+                messageDiv.textContent = content;
+                messagesDiv.appendChild(messageDiv);
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            };
+
+            // Check for cached model
+            const checkCachedModel = async () => {
+                try {
+                    const cache = await caches.open('wllama-model-cache');
+                    const response = await cache.match('gemma-3-1b-it-UD-Q6_K_XL.gguf');
+                    return !!response;
+                } catch (error) {
+                    console.error('Error checking cache:', error);
+                    return false;
+                }
+            };
+
+            // Listen for DigitaUserMessage changes
+            function setupDigitaUserMessageListener() {
+                let lastValue = localStorage.getItem('DigitaUserMessage');
+                
+                setInterval(() => {
+                    const currentValue = localStorage.getItem('DigitaUserMessage');
+                    if (currentValue && currentValue !== lastValue) {
+                        lastValue = currentValue;
+                        userInput.value = currentValue;
+                        handleSend();
+                    }
+                }, 100);
+            }
+
+            // Initialize Wllama
+            const initWllama = async () => {
+                loadingDiv.style.display = 'block';
+                sendButton.disabled = true;
+                statusText.textContent = 'Loading...';
+
+                try {
+                    wllama = new Wllama({
+                        'single-thread/wllama.wasm': 'https://cdn.jsdelivr.net/npm/@wllama/wllama@2.3.0/esm/single-thread/wllama.wasm',
+                        'multi-thread/wllama.wasm': 'https://cdn.jsdelivr.net/npm/@wllama/wllama@2.3.0/esm/multi-thread/wllama.wasm'
+                    });
+
+                    await wllama.loadModelFromHF(
+                        'unsloth/gemma-3-1b-it-GGUF',
+                        'gemma-3-1b-it-UD-Q6_K_XL.gguf',
+                        {
+                            progressCallback: ({ loaded, total }) => {
+                                const progress = Math.round((loaded / total) * 100);
+                                loadingDiv.textContent = `Loading Gemma3... ${progress}%`;
+                                localStorage.setItem('globalLoadingStatus', `PID1738:${progress}% Loading language model files...`);
+                            },
+                            cache: true
+                        }
+                    );
+
+                    const template = await wllama.getChatTemplate();
+                    if (template) {
+                        await tokenizeAndCache({ role: 'system', content: template });
+                    }
+
+                    modelInfoDiv.textContent = `Model loaded successfully | Chat template: ${template ? 'Available' : 'Using default'}`;
+
+                    isModelLoaded = true;
+                    loadingDiv.style.display = 'none';
+                    sendButton.disabled = false;
+                    statusText.textContent = 'Online';
+
+                    setupDigitaUserMessageListener();
+                    addMessageToUI('system', 'Model loaded successfully. You can start chatting!');
+                    localStorage.setItem('globalLoadingStatus', 'PID1738:100% Language model fully initialized.');
+                } catch (error) {
+                    console.error('Error initializing Wllama:', error);
+                    loadingDiv.textContent = 'Error loading model. Please try again.';
+                    localStorage.setItem('globalLoadingStatus', 'PID1738:11% Failed to load the language model, Digita needs to restart!');
+                    statusText.textContent = 'Error';
+                    addLoadModelButton();
+                }
+            };
+
+            // Handle sending messages
+  const handleSend = async () => {
+    const message = userInput.value.trim();
+    if (!message) return;
+
+    const userMessage = { role: 'user', content: message };
+    chatHistory.push(userMessage);
+    addMessageToUI('user', message);
+    userInput.value = '';
+    sendButton.disabled = true;
+    loadingDiv.style.display = 'block';
+
+    try {
+        // Tokenize the new message first to add it to cache
+        await tokenizeAndCache(userMessage);
+        
+        const recentMessages = getRecentMessages(chatHistory);
+        const messages = [
+            { role: 'system', content: systemPromptInput.value.trim() },
+            ...recentMessages
+        ];
+
+        const response = await wllama.createChatCompletion(messages, {
+            maxTokens: 512,
+            temperature: 1.0,
+            topK: 64,
+            topP: 0.95,
+            useCache: true
+        });
+        /*
+        According to the Gemma team, the optimal config for inference is
+        temperature = 1.0, top_k = 64, top_p = 0.95, min_p = 0.0
+        */
+
+        localStorage.setItem('DigitaMessage', response.trim());
+
+        const assistantMessage = { role: 'assistant', content: response.trim() };
+        chatHistory.push(assistantMessage);
+        // Cache the response immediately
+        await tokenizeAndCache(assistantMessage);
+        
+        addMessageToUI('assistant', response.trim());
+        saveChatHistory();
+        saveTokenCache();
+    } catch (error) {
+        console.error('Error generating response:', error);
+        addMessageToUI('system', 'Sorry, I encountered an error generating a response.');
+    }
+
+    loadingDiv.style.display = 'none';
+    sendButton.disabled = false;
+};
+
+            // Event listeners
+            sendButton.addEventListener('click', handleSend);
+            userInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSend();
+                }
+            });
+
+clearButton.addEventListener('click', () => {
+    messagesDiv.innerHTML = '';
+    chatHistory = [];
+    const newCache = new Map();
+    tokenCache.forEach((value, key) => {
+        const msgObj = JSON.parse(key);
+        if (msgObj.role === 'system') {
+            newCache.set(key, value);
+        }
+    });
+    tokenCache = newCache;
+    saveTokenCache();
+    localStorage.removeItem('chatHistory');
+    if (!isModelLoaded) {
+        addLoadModelButton();
+    }
+});
+
+            // Initialize
+            loadTokenCache(); // Load token cache on startup
+            loadSystemPrompt();
+            loadChatHistory();
+            addLoadModelButton();
+
+
+            // load a value from localStorage
+function getLocalStorageValue(key, defaultValue, validator) {
+    const value = localStorage.getItem(key);
+
+    // If the key doesn't exist, return the default value
+    if (value === null) {
+        return defaultValue;
+    }
+
+    return value;
+}
+    
+    const LAZY_LOAD_KEY = 'lazyLoadPreference';
+    const lazyLoadPreference = getLocalStorageValue(LAZY_LOAD_KEY, 'lazy', (value) => {
+        return ['lazy', 'full', 'safe'].includes(value);
+    });
+
+    switch (lazyLoadPreference) {
+        case 'full':
+            setTimeout(() => { const button = document.querySelector('.load-model-button'); button.remove(); initWllama(); }, 1000); 
+            break;
+
+        case 'safe':
+            console.log(`Wllama didn't load automatically because Digita is in safe mode.`);
+            break;
+
+        case 'lazy':
+        default:
+            // Do nothing, iframes and extensions will load on tab switch
+            break;
+    }
+
+</script>
+</body>
+</html>
