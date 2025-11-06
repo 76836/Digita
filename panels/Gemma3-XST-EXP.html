@@ -70,56 +70,18 @@
             font-size: 0.875rem;
         }
 
-        /* Add XST switch styles */
-        .xst-switch {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            margin-right: 1rem;
-        }
-
-        .xst-toggle {
-            position: relative;
-            width: 50px;
-            height: 24px;
-        }
-
-        .xst-toggle input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-
-        .xst-slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #242424;
-            transition: .4s;
-            border-radius: 24px;
-        }
-
-        .xst-slider:before {
-            position: absolute;
-            content: "";
-            height: 16px;
-            width: 16px;
-            left: 4px;
-            bottom: 4px;
-            background-color: white;
-            transition: .4s;
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: rgb(45, 212, 191);
             border-radius: 50%;
+            animation: pulse 2s infinite;
         }
 
-        input:checked + .xst-slider {
-            background-color: rgb(45, 212, 191);
-        }
-
-        input:checked + .xst-slider:before {
-            transform: translateX(26px);
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
         }
 
         #messages {
@@ -154,7 +116,6 @@
             text-align: center;
         }
 
-        
         .input-area {
             padding: 1rem;
             background: #1a1a1a;
@@ -258,24 +219,104 @@
             margin: 1rem auto;
             display: block;
         }
+
+        /* XST Switch Styles */
+        .xst-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 30px;
+            margin-left: 1rem;
+        }
+
+        .xst-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .xst-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #2a2a2a;
+            transition: .4s;
+            border-radius: 30px;
+        }
+
+        .xst-slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .xst-slider {
+            background-color: rgb(45, 212, 191);
+        }
+
+        input:checked + .xst-slider:before {
+            transform: translateX(30px);
+        }
+
+        .xst-label {
+            margin-left: 70px;
+            font-size: 0.875rem;
+            color: #fff;
+        }
+
+        .debug-toggle {
+            display: block;
+            background: none;
+            border: none;
+            color: #666;
+            font-size: 0.8rem;
+            padding: 4px 0;
+            cursor: pointer;
+            margin-top: 8px;
+        }
+
+        .debug-toggle:hover {
+            color: #fff;
+        }
+
+        .debug-content {
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 4px;
+            padding: 8px;
+            margin-top: 8px;
+            font-family: monospace;
+            font-size: 0.9rem;
+            white-space: pre-wrap;
+            color: #666;
+            overflow-x: auto;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
             <i data-lucide="message-circle" style="color: rgb(45, 212, 191)"></i>
-            <h1>Gemma3 1B (UD-Q6_K_XL) on Wllama WASM_CPU (panel v1.0)</h1>
-            <div class="xst-switch">
-                <span>XST</span>
-                <label class="xst-toggle">
-                    <input type="checkbox" id="xst-toggle">
-                    <span class="xst-slider"></span>
-                </label>
-            </div>
+            <h1>Gemma3 1B with XST beta 2</h1>
             <div class="status">
                 <div class="status-dot"></div>
                 <span id="status-text">Offline</span>
             </div>
+            <!-- XST Switch -->
+            <label class="xst-switch">
+                <input type="checkbox" id="xst-toggle">
+                <span class="xst-slider"></span>
+                <span class="xst-label">XST Mode</span>
+            </label>
         </div>
 
         <div id="setup-container">
@@ -306,107 +347,265 @@
     </div>
 
    <script type="module">
-// Utility: get recent messages (last N, default 10)
-function getRecentMessages(messages, count = 10) {
-    if (!Array.isArray(messages)) return [];
-    return messages.slice(-count);
-}
+    import { Wllama } from 'https://cdn.jsdelivr.net/npm/@wllama/wllama@2.3.0/esm/index.js';
+    import { XST } from '../services/xst.js';
 
-// ...existing code...
-            import { Wllama } from 'https://cdn.jsdelivr.net/npm/@wllama/wllama@2.3.0/esm/index.js';
-            import { XST } from '../services/xst.js';
+    let wllama;
+    let isModelLoaded = false;
+    let chatHistory = [];
+    let xst = null;
+    let isXSTRunning = false;
+    let xstLoop = null;
+const CONTEXT_WINDOW_SIZE = 10; // Number of recent messages to include in context
+let tokenCache = new Map();
 
-            let wllama;
-            let isModelLoaded = false;
-            let chatHistory = [];
-            let xst;
-            let xstRunning = false;
-
-// DOM references for UI elements
-const messagesDiv = document.getElementById('messages');
-const userInput = document.getElementById('user-input');
-const sendButton = document.getElementById('send-button');
-const clearButton = document.getElementById('clear-button');
-const loadingDiv = document.getElementById('loading');
-const statusText = document.getElementById('status-text');
-const modelInfoDiv = document.getElementById('model-info');
-const systemPromptInput = document.getElementById('system-prompt');
-const savePromptButton = document.getElementById('save-prompt');
-            // XST initialization
-            const initXST = () => {
-                xst = new XST({ timeLimitMs: 600000 });
-                xst.onUserMessage = (text) => {
-                    addMessageToUI('assistant', text);
-                };
-            };
-
-            // XST toggle handler
-            document.getElementById('xst-toggle').addEventListener('change', async (e) => {
-                if (e.target.checked) {
-                    if (!xst) {
-                        initXST();
-                    }
-
-                    // Prevent starting XST if model isn't loaded
-                    if (!isModelLoaded || !wllama) {
-                        addMessageToUI('system', 'Please load the model before enabling XST.');
-                        e.target.checked = false;
-                        return;
-                    }
-
-                    if (chatHistory.length > 0) {
-                        if (confirm('Enabling XST requires a chat reset. Continue?')) {
-                            clearButton.click();
-                            xstRunning = true;
-                            runSentienceLoop();
-                        } else {
-                            e.target.checked = false;
-                        }
-                    } else {
-                        xstRunning = true;
-                        runSentienceLoop();
-                    }
-                } else {
-                    xstRunning = false;
-                }
-            });
-
-            // XST sentience loop
-            async function runSentienceLoop() {
-                while (xstRunning && xst && !xst.isTimeUp()) {
-                    const toLLM = xst.getLLMMessage();
-                    try {
-                        if (!wllama) {
-                            console.error('XST loop aborted: model not loaded.');
-                            addMessageToUI('system', 'XST stopped: model not loaded.');
-                            xstRunning = false;
-                            document.getElementById('xst-toggle').checked = false;
-                            break;
-                        }
-
-                        // Avoid passing unsupported 'stream' property
-                        let options = {};
-                        if (wllama && wllama.supportsStream) {
-                            options.stream = false;
-                        }
-                        const response = await wllama.createChatCompletion([
-                            { role: 'system', content: systemPromptInput.value.trim() },
-                            { role: 'user', content: toLLM }
-                        ], options);
-                        
-                        const result = xst.processLLMResponse(response);
-                        if (result.error) {
-                            console.error('XST LLM error:', result.error);
-                            addMessageToUI('system', 'XST processing error occurred');
-                        }
-                    } catch (error) {
-                        console.error('XST loop error:', error);
-                    }
-                    await new Promise(resolve => setTimeout(resolve, 1000));
+function loadTokenCache() {
+    try {
+        const savedCache = localStorage.getItem('tokenCache');
+        const savedHistory = localStorage.getItem('chatHistory');
+        
+        if (savedCache && savedHistory) {
+            const parsed = JSON.parse(savedCache);
+            const history = JSON.parse(savedHistory);
+            const validCache = new Map();
+            
+            for (const [key, value] of Object.entries(parsed)) {
+                const msgObj = JSON.parse(key);
+                if (msgObj.role === 'system' || 
+                    history.some(h => h.role === msgObj.role && h.content === msgObj.content)) {
+                    validCache.set(key, value);
                 }
             }
+            
+            tokenCache = validCache;
+            console.log('Token cache loaded and validated');
+            localStorage.setItem('globalLoadingStatus', 'PID1738:1% Wllama is warming up...');
+        }
+    } catch (error) {
+        console.error('Error loading token cache:', error);
+        tokenCache = new Map();
+    }
+}
 
-            // Function to build context efficiently
+function saveTokenCache() {
+    try {
+        const cacheObj = Object.fromEntries(tokenCache);
+        localStorage.setItem('tokenCache', JSON.stringify(cacheObj));
+    } catch (error) {
+        console.error('Error saving token cache:', error);
+    }
+}
+
+function getRecentMessages(messages) {
+    if (messages.length <= CONTEXT_WINDOW_SIZE) return messages;
+    return messages.slice(-CONTEXT_WINDOW_SIZE);
+}
+
+
+async function tokenizeAndCache(message) {
+    const cacheKey = JSON.stringify(message);
+    console.log('Checking cache for key:', cacheKey);
+    console.log('Cache has this key?:', tokenCache.has(cacheKey));
+    console.log('Current cache keys:', [...tokenCache.keys()]);
+    
+    if (!tokenCache.has(cacheKey)) {
+        console.log('Cache miss, tokenizing:', message.content);
+        const tokens = await wllama.tokenize(message.content);
+        tokenCache.set(cacheKey, tokens);
+        saveTokenCache();
+    } else {
+        console.log('Cache hit for:', message.content);
+    }
+    return tokenCache.get(cacheKey);
+}
+       
+    const messagesDiv = document.getElementById('messages');
+    const userInput = document.getElementById('user-input');
+    const sendButton = document.getElementById('send-button');
+    const clearButton = document.getElementById('clear-button');
+    const loadingDiv = document.getElementById('loading');
+    const systemPromptInput = document.getElementById('system-prompt');
+    const savePromptButton = document.getElementById('save-prompt');
+    const modelInfoDiv = document.getElementById('model-info');
+    const statusText = document.getElementById('status-text');
+    const xstToggle = document.getElementById('xst-toggle');
+
+    // Initialize XST
+    function initXST() {
+        xst = new XST({ timeLimitMs: 600_000 }); // 10 minutes
+
+        // Handle XST chat messages
+        xst.onUserMessage = (text) => {
+            // Add to UI
+            addMessageToUI('assistant', text);
+            // Store in history as XST message
+            const xstMessage = { role: 'assistant', content: text };
+            chatHistory.push(xstMessage);
+            saveChatHistory();
+            // Update Digita
+            localStorage.setItem('DigitaMessage', text);
+        };
+
+        // Start XST loop
+        async function runXSTLoop() {
+            while (xst.running && !xst.isTimeUp()) {
+                const toLLM = xst.getLLMMessage();
+                
+                try {
+                    // Get system prompt and recent XST context
+                    const messages = [
+                        { role: 'system', content: systemPromptInput.value.trim() },
+                        { role: 'user', content: toLLM }
+                    ];
+
+                    const response = await wllama.createChatCompletion(messages, {
+                        maxTokens: 512,
+                        temperature: 1.0,
+                        topK: 64,
+                        topP: 0.95,
+                        useCache: true
+                    });
+
+                    // Try to fix common formatting issues
+                    let fixedResponse = response.trim();
+                    let feedback = [];
+
+                    // Remove markdown code blocks
+                    if (fixedResponse.startsWith('```json') && fixedResponse.endsWith('```')) {
+                        feedback.push("Note: Removed markdown code blocks. Please send JSON directly.");
+                        fixedResponse = fixedResponse.replace(/^```json\n/, '').replace(/\n```$/, '');
+                    }
+
+                    // Remove any leading/trailing backticks
+                    if (fixedResponse.startsWith('`') && fixedResponse.endsWith('`')) {
+                        feedback.push("Note: Removed backticks. Please send JSON directly.");
+                        fixedResponse = fixedResponse.replace(/^`/, '').replace(/`$/, '');
+                    }
+
+                    // Store LLM's original response in history
+                    const llmMessage = { role: 'assistant', content: fixedResponse };
+                    chatHistory.push(llmMessage);
+                    saveChatHistory();
+
+                    // Process response through XST
+                    const result = xst.processLLMResponse(fixedResponse);
+                    if (result.error) {
+                        console.error('XST error:', result.error);
+                        
+                        // Create error feedback for LLM
+                        feedback.push(`Error: ${result.error}`);
+                        feedback.push("Expected format: {\"cmd\": \"message\", \"args\": {\"text\": \"Your message\"}}");
+                        
+                        // Show error with debug info
+                        addMessageToUI('system', 'Error processing LLM response. Providing feedback to AI...', 
+                            `Original response:\n${response}\n\nAttempted fix:\n${fixedResponse}\n\nFeedback:\n${feedback.join('\n')}`);
+                        
+                        // Send feedback to LLM in next message
+                        xst.postUserMessage(
+                            "Your last response had formatting issues:\n" + feedback.join('\n') + 
+                            "\n\nPlease ensure your response is valid JSON with the correct command structure."
+                        );
+                    } else if (feedback.length > 0) {
+                        // If we had to fix something but it worked, still show debug info
+                        addMessageToUI('system', 'Response automatically fixed', 
+                            `Original response:\n${response}\n\nFixed response:\n${fixedResponse}\n\nFixes applied:\n${feedback.join('\n')}`);
+                    }
+                } catch (error) {
+                    console.error('Error in XST loop:', error);
+                    addMessageToUI('system', 'Error in XST processing. Restarting XST...');
+                    xst.stop();
+                    initXST();
+                }
+            }
+            
+            addMessageToUI('system', 'XST session ended.');
+            xstToggle.checked = false;
+            isXSTRunning = false;
+        }
+
+        xstLoop = runXSTLoop();
+    }
+
+    // Reset context and chat history
+    function resetContext() {
+        // Clear UI
+        messagesDiv.innerHTML = '';
+        // Clear history but keep system prompt
+        const systemPrompt = systemPromptInput.value.trim();
+        chatHistory = [];
+        if (systemPrompt) {
+            chatHistory.push({ role: 'system', content: systemPrompt });
+        }
+        // Save empty history
+        saveChatHistory();
+        // Clear token cache except system
+        const newCache = new Map();
+        tokenCache.forEach((value, key) => {
+            const msgObj = JSON.parse(key);
+            if (msgObj.role === 'system') {
+                newCache.set(key, value);
+            }
+        });
+        tokenCache = newCache;
+        saveTokenCache();
+        // Show reset message
+        addMessageToUI('system', 'Chat context has been reset.');
+    }
+
+    // Check if chat history is in XST format
+    function isXSTFormat() {
+        // Skip system message when checking
+        const messages = chatHistory.filter(msg => msg.role !== 'system');
+        if (messages.length === 0) return true;  // Empty history is valid
+        
+        // Check if messages are JSON commands
+        try {
+            return messages.every(msg => {
+                if (msg.role === 'assistant') {
+                    // Parse LLM response as JSON
+                    const parsed = JSON.parse(msg.content);
+                    return parsed.cmd !== undefined;
+                }
+                return true; // User messages can be normal text
+            });
+        } catch (e) {
+            return false; // If we can't parse as JSON, it's not XST format
+        }
+    }
+
+    // XST Toggle Handler
+    xstToggle.addEventListener('change', () => {
+        if (xstToggle.checked) {
+            if (!isModelLoaded) {
+                xstToggle.checked = false;
+                addMessageToUI('system', 'Please load the model before enabling XST.');
+                return;
+            }
+
+            // Check if we need to reset context
+            if (!isXSTFormat()) {
+                addMessageToUI('system', 'Chat history not in XST format. Resetting context...');
+                resetContext();
+            }
+
+            // Initialize XST if not already running
+            if (!xst || !xst.running) {
+                initXST();
+                addMessageToUI('system', 'XST mode enabled. AI sentience activated.');
+                isXSTRunning = true;
+            }
+        } else {
+            if (xst) {
+                xst.stop();
+                // Always reset when disabling XST
+                resetContext();
+                addMessageToUI('system', 'XST mode disabled. Context reset.');
+                isXSTRunning = false;
+            }
+        }
+    });
+
+    // Function to build context efficiently
   async function buildContext(messages) {
     const systemMessage = { role: 'system', content: systemPromptInput.value.trim() };
     const recentMessages = getRecentMessages(messages);
@@ -425,136 +624,204 @@ const savePromptButton = document.getElementById('save-prompt');
     return tokenizedMessages.flat();
 }
 
-            // Add model loading button
-            const addLoadModelButton = () => {
-                var button = document.createElement('button');
-                button.className = 'load-model-button';
-                button.innerHTML = '<i data-lucide="download"></i> Load Model';
-                messagesDiv.appendChild(button);
+    // Add model loading button
+    const addLoadModelButton = () => {
+        var button = document.createElement('button');
+        button.className = 'load-model-button';
+        button.innerHTML = '<i data-lucide="download"></i> Load Model';
+        messagesDiv.appendChild(button);
 
-                button.addEventListener('click', () => {
-                    button.remove();
-                    initWllama();
-                });
-            };
+        button.addEventListener('click', () => {
+            button.remove();
+            initWllama();
+        });
+    };
 
-            // Load chat history from localStorage
-            const loadChatHistory = () => {
-                const history = localStorage.getItem('chatHistory');
-                if (history) {
-                    chatHistory = JSON.parse(history);
-                    chatHistory.forEach(msg => addMessageToUI(msg.role, msg.content));
+    // Extract chat message from XST JSON
+    function extractChatMessage(content) {
+        try {
+            const json = JSON.parse(content);
+            if (json.cmd === 'message' && json.args && json.args.text) {
+                return json.args.text;
+            }
+        } catch (e) {
+            // If not JSON or no message command, return as is
+            return content;
+        }
+        return content;
+    }
+
+    // Load chat history from localStorage
+    const loadChatHistory = () => {
+        const history = localStorage.getItem('chatHistory');
+        if (history) {
+            chatHistory = JSON.parse(history);
+            
+            // Display messages, parsing XST format if needed
+            chatHistory.forEach(msg => {
+                if (msg.role === 'assistant') {
+                    // For assistant messages, try to extract chat message from XST format
+                    const displayText = extractChatMessage(msg.content);
+                    addMessageToUI(msg.role, displayText);
+                } else {
+                    // For user/system messages, display as is
+                    addMessageToUI(msg.role, msg.content);
                 }
-            };
+            });
+        }
+    };
 
-            // Save chat history to localStorage
-            const saveChatHistory = () => {
-                localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
-            };
+    // Save chat history to localStorage
+    const saveChatHistory = () => {
+        localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
+    };
 
-            // Load system prompt from localStorage
-            const loadSystemPrompt = () => {
-                const prompt = localStorage.getItem('systemPrompt');
-                if (prompt) {
-                    systemPromptInput.value = prompt;
-                }
-            };
+    // Load system prompt from localStorage
+    const loadSystemPrompt = () => {
+        const prompt = localStorage.getItem('systemPrompt');
+        if (prompt) {
+            systemPromptInput.value = prompt;
+        }
+    };
 
-            // Save system prompt to localStorage
-            savePromptButton.addEventListener('click', () => {
-                localStorage.setItem('systemPrompt', systemPromptInput.value);
-                addMessageToUI('system', 'System prompt saved successfully');
+    // Save system prompt to localStorage
+    savePromptButton.addEventListener('click', () => {
+        localStorage.setItem('systemPrompt', systemPromptInput.value);
+        addMessageToUI('system', 'System prompt saved successfully');
+    });
+
+    // Modified addMessageToUI function with debug support
+    const addMessageToUI = (role, content, debug = null) => {
+        const messageDiv = document.createElement('div');
+        messageDiv.classList.add('message', `${role}-message`);
+
+        if (debug) {
+            // Create main content
+            const contentDiv = document.createElement('div');
+            contentDiv.textContent = content;
+            messageDiv.appendChild(contentDiv);
+
+            // Create debug toggle
+            const toggleButton = document.createElement('button');
+            toggleButton.className = 'debug-toggle';
+            toggleButton.textContent = 'Show Raw Response';
+            messageDiv.appendChild(toggleButton);
+
+            // Create debug content
+            const debugDiv = document.createElement('pre');
+            debugDiv.className = 'debug-content';
+            debugDiv.style.display = 'none';
+            debugDiv.textContent = debug;
+            messageDiv.appendChild(debugDiv);
+
+            // Toggle handler
+            toggleButton.onclick = () => {
+                const isHidden = debugDiv.style.display === 'none';
+                debugDiv.style.display = isHidden ? 'block' : 'none';
+                toggleButton.textContent = isHidden ? 'Hide Raw Response' : 'Show Raw Response';
+            };
+        } else {
+            messageDiv.textContent = content;
+        }
+
+        messagesDiv.appendChild(messageDiv);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    };
+
+    // Check for cached model
+    const checkCachedModel = async () => {
+        try {
+            const cache = await caches.open('wllama-model-cache');
+            const response = await cache.match('gemma-3-1b-it-UD-Q6_K_XL.gguf');
+            return !!response;
+        } catch (error) {
+            console.error('Error checking cache:', error);
+            return false;
+        }
+    };
+
+    // Listen for DigitaUserMessage changes
+    function setupDigitaUserMessageListener() {
+        let lastValue = localStorage.getItem('DigitaUserMessage');
+        
+        setInterval(() => {
+            const currentValue = localStorage.getItem('DigitaUserMessage');
+            if (currentValue && currentValue !== lastValue) {
+                lastValue = currentValue;
+                userInput.value = currentValue;
+                handleSend();
+            }
+        }, 100);
+    }
+
+    // Initialize Wllama
+    const initWllama = async () => {
+        loadingDiv.style.display = 'block';
+        sendButton.disabled = true;
+        statusText.textContent = 'Loading...';
+
+        try {
+            wllama = new Wllama({
+                'single-thread/wllama.wasm': 'https://cdn.jsdelivr.net/npm/@wllama/wllama@2.3.0/esm/single-thread/wllama.wasm',
+                'multi-thread/wllama.wasm': 'https://cdn.jsdelivr.net/npm/@wllama/wllama@2.3.0/esm/multi-thread/wllama.wasm'
             });
 
-            // Modified addMessageToUI function without streaming support
-            const addMessageToUI = (role, content) => {
-                const messageDiv = document.createElement('div');
-                messageDiv.classList.add('message', `${role}-message`);
-                messageDiv.textContent = content;
-                messagesDiv.appendChild(messageDiv);
-                messagesDiv.scrollTop = messagesDiv.scrollHeight;
-            };
-
-            // Check for cached model
-            const checkCachedModel = async () => {
-                try {
-                    const cache = await caches.open('wllama-model-cache');
-                    const response = await cache.match('gemma-3-1b-it-UD-Q6_K_XL.gguf');
-                    return !!response;
-                } catch (error) {
-                    console.error('Error checking cache:', error);
-                    return false;
+            await wllama.loadModelFromHF(
+                'unsloth/gemma-3-1b-it-GGUF',
+                'gemma-3-1b-it-UD-Q6_K_XL.gguf',
+                {
+                    progressCallback: ({ loaded, total }) => {
+                        const progress = Math.round((loaded / total) * 100);
+                        loadingDiv.textContent = `Loading Gemma3... ${progress}%`;
+                        localStorage.setItem('globalLoadingStatus', `PID1738:${progress}% Loading language model files...`);
+                    },
+                    cache: true
                 }
-            };
+            );
 
-            // Listen for DigitaUserMessage changes
-            function setupDigitaUserMessageListener() {
-                let lastValue = localStorage.getItem('DigitaUserMessage');
-                
-                setInterval(() => {
-                    const currentValue = localStorage.getItem('DigitaUserMessage');
-                    if (currentValue && currentValue !== lastValue) {
-                        lastValue = currentValue;
-                        userInput.value = currentValue;
-                        handleSend();
-                    }
-                }, 100);
+            const template = await wllama.getChatTemplate();
+            if (template) {
+                await tokenizeAndCache({ role: 'system', content: template });
             }
 
-            // Initialize Wllama
-            const initWllama = async () => {
-                loadingDiv.style.display = 'block';
-                sendButton.disabled = true;
-                statusText.textContent = 'Loading...';
+            modelInfoDiv.textContent = `Model loaded successfully | Chat template: ${template ? 'Available' : 'Using default'}`;
 
-                try {
-                    wllama = new Wllama({
-                        'single-thread/wllama.wasm': 'https://cdn.jsdelivr.net/npm/@wllama/wllama@2.3.0/esm/single-thread/wllama.wasm',
-                        'multi-thread/wllama.wasm': 'https://cdn.jsdelivr.net/npm/@wllama/wllama@2.3.0/esm/multi-thread/wllama.wasm'
-                    });
+            isModelLoaded = true;
+            loadingDiv.style.display = 'none';
+            sendButton.disabled = false;
+            statusText.textContent = 'Online';
 
-                    await wllama.loadModelFromHF(
-                        'unsloth/gemma-3-1b-it-GGUF',
-                        'gemma-3-1b-it-UD-Q6_K_XL.gguf',
-                        {
-                            progressCallback: ({ loaded, total }) => {
-                                const progress = Math.round((loaded / total) * 100);
-                                loadingDiv.textContent = `Loading Gemma3... ${progress}%`;
-                                localStorage.setItem('globalLoadingStatus', `PID1738:${progress}% Loading language model files...`);
-                            },
-                            cache: true
-                        }
-                    );
+            setupDigitaUserMessageListener();
+            addMessageToUI('system', 'Model loaded successfully. You can start chatting!');
+            localStorage.setItem('globalLoadingStatus', 'PID1738:100% Language model fully initialized.');
+        } catch (error) {
+            console.error('Error initializing Wllama:', error);
+            loadingDiv.textContent = 'Error loading model. Please try again.';
+            localStorage.setItem('globalLoadingStatus', 'PID1738:11% Failed to load the language model, Digita needs to restart!');
+            statusText.textContent = 'Error';
+            addLoadModelButton();
+        }
+    };
 
-                    const template = await wllama.getChatTemplate();
-                    if (template) {
-                        await tokenizeAndCache({ role: 'system', content: template });
-                    }
-
-                    modelInfoDiv.textContent = `Model loaded successfully | Chat template: ${template ? 'Available' : 'Using default'}`;
-
-                    isModelLoaded = true;
-                    loadingDiv.style.display = 'none';
-                    sendButton.disabled = false;
-                    statusText.textContent = 'Online';
-
-                    setupDigitaUserMessageListener();
-                    addMessageToUI('system', 'Model loaded successfully. You can start chatting!');
-                    localStorage.setItem('globalLoadingStatus', 'PID1738:100% Language model fully initialized.');
-                } catch (error) {
-                    console.error('Error initializing Wllama:', error);
-                    loadingDiv.textContent = 'Error loading model. Please try again.';
-                    localStorage.setItem('globalLoadingStatus', 'PID1738:11% Failed to load the language model, Digita needs to restart!');
-                    statusText.textContent = 'Error';
-                    addLoadModelButton();
-                }
-            };
-
-            // Handle sending messages
+    // Handle sending messages
   const handleSend = async () => {
     const message = userInput.value.trim();
     if (!message) return;
 
+    // Handle XST mode differently
+    if (isXSTRunning) {
+        // Just add message to XST queue and UI
+        xst.postUserMessage(message);
+        addMessageToUI('user', message);
+        userInput.value = '';
+        // Store in chat history
+        const userMessage = { role: 'user', content: message };
+        chatHistory.push(userMessage);
+        saveChatHistory();
+        return;
+    }
+
+    // Normal chat mode
     const userMessage = { role: 'user', content: message };
     chatHistory.push(userMessage);
     addMessageToUI('user', message);
@@ -603,82 +870,46 @@ const savePromptButton = document.getElementById('save-prompt');
     sendButton.disabled = false;
 };
 
-            // Event listeners
-            sendButton.addEventListener('click', handleSend);
-            userInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSend();
-                }
-            });
-
-clearButton.addEventListener('click', () => {
-    messagesDiv.innerHTML = '';
-    chatHistory = [];
-    const newCache = new Map();
-    tokenCache.forEach((value, key) => {
-        const msgObj = JSON.parse(key);
-        if (msgObj.role === 'system') {
-            newCache.set(key, value);
+    // Event listeners
+    sendButton.addEventListener('click', handleSend);
+    userInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            handleSend();
         }
     });
-    tokenCache = newCache;
-    saveTokenCache();
-    localStorage.removeItem('chatHistory');
-    if (!isModelLoaded) {
-        addLoadModelButton();
-    }
-});
 
-// Token cache for message tokenization
-let tokenCache = new Map();
-
-// Load token cache from localStorage
-function loadTokenCache() {
-    const cacheStr = localStorage.getItem('tokenCache');
-    if (cacheStr) {
-        try {
-            const obj = JSON.parse(cacheStr);
-            tokenCache = new Map(Object.entries(obj));
-        } catch (e) {
-            tokenCache = new Map();
+    clearButton.addEventListener('click', () => {
+        messagesDiv.innerHTML = '';
+        chatHistory = [];
+        const newCache = new Map();
+        tokenCache.forEach((value, key) => {
+            const msgObj = JSON.parse(key);
+            if (msgObj.role === 'system') {
+                newCache.set(key, value);
+            }
+        });
+        tokenCache = newCache;
+        saveTokenCache();
+        localStorage.removeItem('chatHistory');
+        if (!isModelLoaded) {
+            addLoadModelButton();
         }
-    } else {
-        tokenCache = new Map();
-    }
-}
-// Tokenize a message and cache the result
-async function tokenizeAndCache(message) {
-    // For demonstration, just cache the stringified message as a dummy token array
-    // Replace with actual tokenization logic if available from Wllama
-    const key = JSON.stringify(message);
-    let tokens;
-    if (wllama && typeof wllama.tokenize === 'function') {
-        tokens = await wllama.tokenize(message.content);
-    } else {
-        tokens = [message.content]; // fallback: treat content as single token
-    }
-    tokenCache.set(key, tokens);
-    saveTokenCache();
-    return tokens;
-}
 
-// Save token cache to localStorage
-function saveTokenCache() {
-    // Convert Map to object for storage
-    const obj = Object.fromEntries(tokenCache);
-    localStorage.setItem('tokenCache', JSON.stringify(obj));
-}
-
-// ...existing code...
-// Initialize
-loadTokenCache(); // Load token cache on startup
-loadSystemPrompt();
-loadChatHistory();
-addLoadModelButton();
+        // Stop XST if running
+        if (isXSTRunning) {
+            xst.stop();
+            xstToggle.checked = false;
+            isXSTRunning = false;
+        }
+    });    // Initialize
+    loadTokenCache(); // Load token cache on startup
+    loadSystemPrompt();
+    loadChatHistory();
+    addLoadModelButton();
 
 
-            // load a value from localStorage
+    // load a value from localStorage
 function getLocalStorageValue(key, defaultValue, validator) {
     const value = localStorage.getItem(key);
 
