@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supertonic TTS</title>
+    <style>
+        :root {
+            --primary: #14b8a6;
+            --primary-dark: #0d9488;
+            --success: #4CAF50;
+            --error: #f44336;
+            --background: #000;
+            --surface: #121212;
+            --surface-alt: #1a1a1a;
+            --border: #2a2a2a;
+            --text: #ffffff;
+            --text-secondary: #999;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background: var(--background);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 1.5rem;
+        }
+
+        .container {
+            background: var(--surface);
+            width: 100%;
+            max-width: 700px;
+            border-radius: 16px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            padding-top: 2px; /* For the gradient border */
+        }
+
+        /* Animated gradient border effect */
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #00f6ff, #a600ff, #00f6ff);
+            background-size: 200% 100%;
+            animation: gradientMove 4s linear infinite;
+        }
+
+        @keyframes gradientMove {
+            0% { background-position: 100% 0; }
+            100% { background-position: -100% 0; }
+        }
+
+        .header {
+            background: var(--surface-alt);
+            padding: 1.25rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .header h1 {
+            font-size: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .header h1 span {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            font-weight: normal;
+        }
+
+        /* Status Indicator */
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 0.8rem;
+            background: #242424;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--primary);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.4; }
+            100% { opacity: 1; }
+        }
+
+        .content {
+            padding: 1.5rem;
+        }
+
+        .section {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.75rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        /* Select & Input Styling */
+        select, textarea {
+            width: 100%;
+            background: var(--surface-alt);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            padding: 0.75rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        select:focus, textarea:focus {
+            border-color: var(--primary);
+        }
+
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        /* Radio Groups */
+        .radio-group {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .radio-item {
+            flex: 1;
+            min-width: 120px;
+            position: relative;
+        }
+
+        .radio-item input {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .radio-label {
+            display: block;
+            padding: 0.6rem;
+            background: var(--surface-alt);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+
+        .radio-item input:checked + .radio-label {
+            background: rgba(20, 184, 166, 0.1);
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        /* Sliders */
+        .slider-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            font-size: 0.85rem;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            accent-color: var(--primary);
+            background: var(--border);
+            height: 4px;
+            border-radius: 2px;
+            cursor: pointer;
+        }
+
+        /* Buttons */
+        .btn {
+            width: 100%;
+            padding: 0.9rem;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: transform 0.1s, opacity 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn:active { transform: scale(0.98); }
+
+        .btn-primary { background: var(--primary); color: #000; }
+        .btn-primary:disabled { background: #333; color: #666; cursor: not-allowed; }
+
+        /* Progress Bars */
+        .progress-container {
+            margin-top: 1rem;
+            height: 4px;
+            background: #242424;
+            border-radius: 10px;
+            overflow: hidden;
+            display: none;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: var(--primary);
+            width: 0%;
+            transition: width 0.3s;
+            box-shadow: 0 0 10px var(--primary);
+        }
+
+        /* Status Messages */
+        .msg {
+            margin-top: 1rem;
+            padding: 0.75rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            display: none;
+        }
+
+        .msg.loading { background: rgba(20, 184, 166, 0.1); color: var(--primary); display: block; border: 1px solid rgba(20, 184, 166, 0.2); }
+        .msg.error { background: rgba(244, 67, 54, 0.1); color: var(--error); display: block; border: 1px solid rgba(244, 67, 54, 0.2); }
+        .msg.success { background: rgba(76, 175, 80, 0.1); color: var(--success); display: block; border: 1px solid rgba(76, 175, 80, 0.2); }
+
+        .info-text {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: 0.5rem;
+            text-align: center;
+        }
+
+        audio {
+            width: 100%;
+            margin-top: 1.5rem;
+            display: none;
+            filter: invert(100%) hue-rotate(180deg); /* Dark theme audio player */
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        @media (max-width: 480px) {
+            .grid-2 { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎙️ Supertonic TTS <span>v2.0</span></h1>
+            <div class="status-badge" id="systemStatus">
+                <div class="status-dot"></div>
+                <span id="statusText">System Idle</span>
+            </div>
+        </div>
+
+        <div class="content">
+            <!-- Loading Interface -->
+            <div id="configUI">
+                <div class="section">
+                    <label>Compute Device</label>
+                    <div class="radio-group">
+                        <label class="radio-item">
+                            <input type="radio" name="device" value="wasm" checked>
+                            <span class="radio-label">WASM (CPU)</span>
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="device" value="webgpu" id="webgpuRadio">
+                            <span class="radio-label">WebGPU (GPU)</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <label>Precision / Quantization</label>
+                    <div class="radio-group">
+                        <label class="radio-item">
+                            <input type="radio" name="dtype" value="fp32" checked>
+                            <span class="radio-label">FP32 (HD)</span>
+                        </label>
+                        <!--<label class="radio-item">
+                            <input type="radio" name="dtype" value="fp16">
+                            <span class="radio-label">FP16</span>
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="dtype" value="q8">
+                            <span class="radio-label">Q8 (Fast)</span>
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="dtype" value="q4">
+                            <span class="radio-label">Q4 (Turbo)</span>-->
+                        </label>
+                    </div>
+                </div>
+
+                <button id="loadBtn" class="btn btn-primary">Initialize Neural Core</button>
+                <div class="progress-container" id="loadProgress">
+                    <div class="progress-bar" id="loadProgressBar"></div>
+                </div>
+                <div class="msg" id="loadStatus"></div>
+            </div>
+
+            <!-- Generation Interface -->
+            <div id="generationUI" style="display: none;">
+                <div class="section">
+                    <label for="text">Synthesis Prompt</label>
+                    <textarea id="text" placeholder="Type or paste text to speak...">Wait... what?!? That's impossible!
+Actually, Dr. Smith said: "It works... barely."
+Also, check these items: 1. Apples, 2. Bananas, and 3. Oranges.</textarea>
+                </div>
+
+                <div class="grid-2">
+                    <div class="section">
+                        <label for="voice">Voice Profile</label>
+                        <select id="voice">
+                            <option value="F1.bin">Female Alpha (F1)</option>
+                            <option value="F2.bin">Female Beta (F2)</option>
+                            <option value="M1.bin">Male Alpha (M1)</option>
+                            <option value="M2.bin">Male Beta (M2)</option>
+                        </select>
+                    </div>
+                    <div class="section">
+                        <div class="slider-header">
+                            <label>Concurrent Jobs</label>
+                            <span id="concurrentVal">2</span>
+                        </div>
+                        <input type="range" id="concurrent" min="1" max="8" value="2">
+                    </div>
+                </div>
+
+                <div class="grid-2">
+                    <div class="section">
+                        <div class="slider-header">
+                            <label>Quality Steps</label>
+                            <span id="stepsVal">5</span>
+                        </div>
+                        <input type="range" id="steps" min="1" max="50" value="5">
+                    </div>
+                    <div class="section">
+                        <div class="slider-header">
+                            <label>Playback Speed</label>
+                            <span id="speedVal">1.05</span>
+                        </div>
+                        <input type="range" id="speed" min="0.5" max="1.5" step="0.05" value="1.05">
+                    </div>
+                </div>
+
+                <button id="generateBtn" class="btn btn-primary">Generate</button>
+
+                <div class="progress-container" id="genProgress">
+                    <div class="progress-bar" id="genProgressBar"></div>
+                </div>
+
+                <div class="msg" id="genStatus"></div>
+                <div class="info-text" id="chunksInfo"></div>
+
+                <audio id="audio" controls></audio>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1';
+        
+        let tts = null;
+        
+        // UI Elements
+        const configUI = document.getElementById('configUI');
+        const generationUI = document.getElementById('generationUI');
+        const loadBtn = document.getElementById('loadBtn');
+        const webgpuRadio = document.getElementById('webgpuRadio');
+        const text = document.getElementById('text');
+        const voice = document.getElementById('voice');
+        const steps = document.getElementById('steps');
+        const speed = document.getElementById('speed');
+        const concurrent = document.getElementById('concurrent');
+        const stepsVal = document.getElementById('stepsVal');
+        const speedVal = document.getElementById('speedVal');
+        const concurrentVal = document.getElementById('concurrentVal');
+        const generateBtn = document.getElementById('generateBtn');
+        const loadStatus = document.getElementById('loadStatus');
+        const loadProgress = document.getElementById('loadProgress');
+        const loadProgressBar = document.getElementById('loadProgressBar');
+        const genStatus = document.getElementById('genStatus');
+        const genProgress = document.getElementById('genProgress');
+        const genProgressBar = document.getElementById('genProgressBar');
+        const chunksInfo = document.getElementById('chunksInfo');
+        const audio = document.getElementById('audio');
+        const statusText = document.getElementById('statusText');
+
+        // Check WebGPU capability
+        (async () => {
+            if (!navigator.gpu) {
+                disableWebGPU();
+                return;
+            }
+            try {
+                const adapter = await navigator.gpu.requestAdapter();
+                if (!adapter) disableWebGPU();
+            } catch {
+                disableWebGPU();
+            }
+        })();
+
+        function disableWebGPU() {
+            webgpuRadio.disabled = true;
+            webgpuRadio.nextElementSibling.style.opacity = '0.3';
+            webgpuRadio.nextElementSibling.textContent += ' (Not Available)';
+        }
+
+        // Slider real-time updates
+        steps.oninput = () => stepsVal.textContent = steps.value;
+        speed.oninput = () => speedVal.textContent = parseFloat(speed.value).toFixed(2);
+        concurrent.oninput = () => concurrentVal.textContent = concurrent.value;
+
+        function updateStatus(element, type, msg) {
+            element.className = `msg ${type}`;
+            element.textContent = msg;
+            if(type === 'loading') statusText.textContent = "Processing...";
+            if(type === 'success') statusText.textContent = "Ready";
+            if(type === 'error') statusText.textContent = "Error";
+        }
+
+        // Text Processing Logic
+        function prepareText(rawText) {
+            let text = rawText
+                .replace(/\*\*([^*]+)\*\*/g, '$1')
+                .replace(/\*([^*]+)\*/g, '$1')
+                .replace(/`([^`]+)`/g, '$1')
+                .replace(/\s+/g, ' ')
+                .trim();
+
+            const abbrevs = ["Mr.", "Mrs.", "Ms.", "Dr.", "Prof.", "Sr.", "Jr.", "St.", "vs.", "etc."];
+            const uuid = "_DOT_";
+            
+            abbrevs.forEach(abbr => {
+                const safeAbbr = abbr.replace('.', uuid);
+                text = text.split(" " + abbr).join(" " + safeAbbr);
+                if(text.startsWith(abbr)) text = text.replace(abbr, safeAbbr);
+            });
+
+            text = text.replace(/(\d+)\.(\s)/g, `$1${uuid}$2`);
+
+            const sentenceRegex = /([.!?]+["')\]]*\s*)/g;
+            const parts = text.split(sentenceRegex);
+            
+            let sentences = [];
+            let current = "";
+            
+            for (let i = 0; i < parts.length; i++) {
+                const part = parts[i];
+                if (!part) continue;
+                if (sentenceRegex.test(part)) {
+                    current += part;
+                    sentences.push(current.trim());
+                    current = "";
+                } else {
+                    current += part;
+                }
+            }
+            if (current.trim()) sentences.push(current.trim());
+
+            sentences = sentences.map(s => s.split(uuid).join('.'));
+
+            const MAX_LENGTH = 250;
+            const finalChunks = [];
+
+            for (let sentence of sentences) {
+                if (sentence.length <= MAX_LENGTH) {
+                    finalChunks.push(sentence);
+                    continue;
+                }
+
+                let remaining = sentence;
+                while (remaining.length > MAX_LENGTH) {
+                    const searchZone = remaining.substring(0, MAX_LENGTH);
+                    let splitIndex = Math.max(
+                        searchZone.lastIndexOf(';'), 
+                        searchZone.lastIndexOf(','),
+                        searchZone.lastIndexOf(' ')
+                    );
+
+                    if (splitIndex === -1) splitIndex = MAX_LENGTH;
+
+                    const splitPoint = splitIndex + 1;
+                    finalChunks.push(remaining.substring(0, splitPoint).trim());
+                    remaining = remaining.substring(splitPoint).trim();
+                }
+                if (remaining) finalChunks.push(remaining);
+            }
+            return finalChunks.filter(c => c.length > 0);
+        }
+
+        // Model Loading
+        loadBtn.onclick = async () => {
+            const device = document.querySelector('input[name="device"]:checked').value;
+            const dtype = document.querySelector('input[name="dtype"]:checked').value;
+            
+            loadBtn.disabled = true;
+            updateStatus(loadStatus, 'loading', 'Warming up...');
+            loadProgress.style.display = 'block';
+
+            try {
+                env.allowLocalModels = false;
+                const options = { 
+                    dtype,
+                    progress_callback: (data) => {
+                        if (data.status === 'progress') {
+                            loadProgressBar.style.width = `${data.progress}%`;
+                            updateStatus(loadStatus, 'loading', `Acquiring system files: ${Math.round(data.progress)}%`);
+                        } else if (data.status === 'ready') {
+                            updateStatus(loadStatus, 'loading', 'Starting program...');
+                        }
+                    }
+                };
+                
+                if (device === 'webgpu') options.device = 'webgpu';
+
+                tts = await pipeline('text-to-speech', 'onnx-community/Supertonic-TTS-ONNX', options);
+
+                loadProgressBar.style.width = '100%';
+                setTimeout(() => {
+                    configUI.style.display = 'none';
+                    generationUI.style.display = 'block';
+                    loadProgress.style.display = 'none';
+                    updateStatus(genStatus, 'success', `TTS Online (${device.toUpperCase()})`);
+                }, 600);
+            } catch (error) {
+                loadProgress.style.display = 'none';
+                updateStatus(loadStatus, 'error', `Core Failure: ${error.message}`);
+                loadBtn.disabled = false;
+            }
+        };
+
+        // Generation Process
+        generateBtn.onclick = async () => {
+            const chunks = prepareText(text.value);
+            if (chunks.length === 0) return;
+
+            generateBtn.disabled = true;
+            audio.style.display = 'none';
+            chunksInfo.textContent = `Partitioning: ${chunks.length} segments detected`;
+            updateStatus(genStatus, 'loading', 'Synthesizing voice...');
+            genProgress.style.display = 'block';
+            genProgressBar.style.width = '0%';
+
+            const startTime = performance.now();
+            const maxConcurrent = parseInt(concurrent.value);
+            const voiceUrl = `https://huggingface.co/onnx-community/Supertonic-TTS-ONNX/resolve/main/voices/${voice.value}`;
+
+            try {
+                let completed = 0;
+                const results = [];
+
+                for (let i = 0; i < chunks.length; i += maxConcurrent) {
+                    const batch = chunks.slice(i, i + maxConcurrent);
+                    const batchPromises = batch.map((chunk, idx) => 
+                        tts(chunk, {
+                            speaker_embeddings: voiceUrl,
+                            num_inference_steps: parseInt(steps.value),
+                            speed: parseFloat(speed.value),
+                        }).then(result => ({ index: i + idx, result }))
+                    );
+                    
+                    const batchResults = await Promise.all(batchPromises);
+                    results.push(...batchResults);
+                    
+                    completed += batch.length;
+                    genProgressBar.style.width = (completed / chunks.length * 100) + '%';
+                    chunksInfo.textContent = `Processed ${completed}/${chunks.length} segments`;
+                }
+
+                results.sort((a, b) => a.index - b.index);
+                
+                let totalSamples = 0;
+                results.forEach(r => totalSamples += r.result.audio.length);
+                const combinedAudio = new Float32Array(totalSamples);
+                let offset = 0;
+                const sampleRate = results[0].result.sampling_rate;
+
+                results.forEach(r => {
+                    combinedAudio.set(r.result.audio, offset);
+                    offset += r.result.audio.length;
+                });
+
+                const audioContext = new AudioContext({ sampleRate });
+                const audioBuffer = audioContext.createBuffer(1, totalSamples, sampleRate);
+                audioBuffer.copyToChannel(combinedAudio, 0);
+
+                const wavBlob = await audioBufferToWav(audioBuffer);
+                audio.src = URL.createObjectURL(wavBlob);
+                audio.style.display = 'block';
+                
+                const duration = ((performance.now() - startTime) / 1000).toFixed(2);
+                updateStatus(genStatus, 'success', `Generation completed in ${duration}s`);
+                audio.play();
+            } catch (error) {
+                updateStatus(genStatus, 'error', `Synthesis Interrupted: ${error.message}`);
+            } finally {
+                generateBtn.disabled = false;
+                genProgress.style.display = 'none';
+            }
+        };
+
+        async function audioBufferToWav(buffer) {
+            const length = buffer.length * 2;
+            const wav = new ArrayBuffer(44 + length);
+            const view = new DataView(wav);
+
+            const writeString = (offset, string) => {
+                for (let i = 0; i < string.length; i++) view.setUint8(offset + i, string.charCodeAt(i));
+            };
+
+            writeString(0, 'RIFF');
+            view.setUint32(4, 36 + length, true);
+            writeString(8, 'WAVE');
+            writeString(12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, 1, true);
+            view.setUint16(22, 1, true);
+            view.setUint32(24, buffer.sampleRate, true);
+            view.setUint32(28, buffer.sampleRate * 2, true);
+            view.setUint16(32, 2, true);
+            view.setUint16(34, 16, true);
+            writeString(36, 'data');
+            view.setUint32(40, length, true);
+
+            const data = buffer.getChannelData(0);
+            let offset = 44;
+            for (let i = 0; i < data.length; i++) {
+                const sample = Math.max(-1, Math.min(1, data[i]));
+                view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
+                offset += 2;
+            }
+            return new Blob([wav], { type: 'audio/wav' });
+        }
+    </script>
+</body>
+</html>
