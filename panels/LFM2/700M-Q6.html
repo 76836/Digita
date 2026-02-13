@@ -225,7 +225,7 @@
     <div class="container">
         <div class="header">
             <i data-lucide="message-circle" style="color: rgb(45, 212, 191)"></i>
-            <h1>LFM2 700M (Q6_K) on Wllama WASM_CPU (panel v1.0)</h1>
+            <h1>LFM2 700M (Q6_K) on Wllama WASM_CPU (panel v1.0.1)</h1>
             <div class="status">
                 <div class="status-dot"></div>
                 <span id="status-text">Offline</span>
@@ -260,7 +260,7 @@
     </div>
 
    <script type="module">
-    import { Wllama } from 'https://cdn.jsdelivr.net/npm/@wllama/wllama@2.3.0/esm/index.js';
+    import { Wllama } from 'https://cdn.jsdelivr.net/npm/@wllama/wllama@2.3.7/esm/index.js';
 
     let wllama;
     let isModelLoaded = false;
@@ -441,8 +441,8 @@ async function tokenizeAndCache(message) {
 
         try {
             wllama = new Wllama({
-                'single-thread/wllama.wasm': 'https://cdn.jsdelivr.net/npm/@wllama/wllama@2.3.0/esm/single-thread/wllama.wasm',
-                'multi-thread/wllama.wasm': 'https://cdn.jsdelivr.net/npm/@wllama/wllama@2.3.0/esm/multi-thread/wllama.wasm'
+                'single-thread/wllama.wasm': 'https://cdn.jsdelivr.net/npm/@wllama/wllama@2.3.7/esm/single-thread/wllama.wasm',
+                'multi-thread/wllama.wasm': 'https://cdn.jsdelivr.net/npm/@wllama/wllama@2.3.7/esm/multi-thread/wllama.wasm'
             });
 
             await wllama.loadModelFromHF(
