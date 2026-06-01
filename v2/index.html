@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth bg-black selection:bg-neutral-800 selection:text-white">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digita v2.0</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['system-ui', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'sans-serif'],
+                        mono: ['ui-monospace', 'SFMono-Regular', 'SF Mono', 'Menlo', 'Consolas', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #000000; color: #888888; }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: #000000; }
+        ::-webkit-scrollbar-thumb { background: #1c1c1c; border-radius: 2px; }
+        ::-webkit-scrollbar-thumb:hover { background: #2d2d2d; }
+        .text-glow { text-shadow: 0 0 30px rgba(255, 255, 255, 0.05); }
+        .modal-transition { transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1); }
+    </style>
+</head>
+<body class="font-sans antialiased overflow-x-hidden min-h-screen flex flex-col justify-between">
+
+    <section class="min-h-screen w-full flex flex-col justify-center items-center relative select-none px-6">
+        <h1 class="text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-bold tracking-tighter text-white text-glow">Digita v2.X</h1>
+        <h1 class="text-2xl font-extrabold tracking-tighter text-white text-glow">Development preview 2026</h1>
+        <div class="absolute bottom-12 flex flex-col items-center space-y-2 text-[10px] tracking-[0.2em] text-neutral-600 animate-pulse font-mono">
+            <span>SCROLL FOR COMPATIBILITY</span>
+            <svg class="w-3.5 h-3.5 mt-1" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
+        </div>
+    </section>
+
+    <section class="max-w-4xl mx-auto px-6 py-24 w-full">
+        <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-12" id="tabGrid"></div>
+
+        <div id="guidesContainer" class="space-y-6"></div>
+    </section>
+
+    <div id="companionModal" class="fixed inset-0 bg-black/95 backdrop-blur-md z-50 flex items-center justify-center opacity-0 pointer-events-none modal-transition p-4">
+        <div class="absolute inset-0" onclick="closeModal()"></div>
+        <div class="relative bg-neutral-950 border border-neutral-900 rounded w-full max-w-xl p-6 sm:p-10 transform scale-95 modal-transition z-10 text-left">
+            <div class="flex justify-between items-start pb-5 border-b border-neutral-900 mb-6">
+                <div>
+                    <h3 class="text-base font-semibold text-white tracking-tight">Choose a digita:</h3>
+                </div>
+                <button onclick="closeModal()" class="text-neutral-500 hover:text-white transition-colors p-1">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4" id="modalCompanions"></div>
+        </div>
+    </div>
+
+    <div id="alertToast" class="fixed bottom-6 right-6 bg-neutral-950 border border-neutral-900 text-white rounded shadow-2xl p-4 max-w-xs transform translate-y-24 opacity-0 transition-all duration-300 flex items-center space-x-3.5 z-50 select-none">
+        <div class="w-8 h-8 rounded bg-neutral-900 border border-neutral-800 flex items-center justify-center text-neutral-400 flex-shrink-0">
+            <svg class="w-4 h-4 text-neutral-400" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>
+        </div>
+        <div>
+            <h5 class="text-[9px] font-mono tracking-widest uppercase text-neutral-500" id="alertTitle">SYSTEM</h5>
+            <p class="text-xs text-neutral-300 mt-0.5" id="alertMsg">Ready.</p>
+        </div>
+    </div>
+
+    <script>
+        const osData = {
+            windows: { name: 'WINDOWS', icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/windows11/windows11-original.svg', invert: false, setupGui: 'Download the package. Right-click it, choose <strong>Rename</strong>, and append <code>.exe</code> to the end (e.g. rename <code>akari-v2</code> to <code>akari-v2.exe</code>).', setupCmd: 'Download the file and save it inside your local workspace directory. Launch your PowerShell terminal inside that folder.', useGui: 'Simply <strong>Double-click</strong> to run! Keep the terminal helper window open in the background to access the local companion model.', useCmd: 'Map local hardware execution layer allocations natively within PowerShell:', cmd: '.\\akari-v2.exe -ngl 9999' },
+            macos: { name: 'MACOS', icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/apple/apple-original.svg', invert: true, setupGui: 'Download the companion module. <strong>Right-click</strong> (or Control-click) the downloaded package and choose <strong>Open</strong> to cleanly bypass macOS Gatekeeper blocks.', setupCmd: 'Grant execute permissions inside your terminal workspace:', cmd1: 'chmod +x akari-v2.llamafile', useGui: 'Confirm the security prompt by clicking <strong>Open</strong>. macOS will execute the architecture automatically using native Metal GPU hardware acceleration.', useCmd: 'Launch directly from your Terminal dashboard:', cmd: './akari-v2.llamafile' },
+            linux: { name: 'LINUX', icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/linux/linux-original.svg', invert: false, setupGui: 'Download the file. To make it executable: Right-click the file &rarr; Properties &rarr; Permissions &rarr; check <strong>"Allow executing file as program"</strong>.', setupCmd: 'Assign permission execution runtime flags via your shell:', cmd1: 'chmod +x akari-v2.llamafile', useGui: 'Simply <strong>double-click</strong> the file within your desktop manager UI environment to initialize the architecture background loop.', useCmd: 'Launch from your bash terminal shell allocating localized hardware resource layers:', cmd: './akari-v2.llamafile -ngl 9999' },
+            chromeos: { name: 'CHROME OS', icon: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/Google_Chrome_icon_%28February_2022%29.svg/960px-Google_Chrome_icon_%28February_2022%29.svg.png', invert: false, setupGui: 'Enable the <strong>Linux Development Environment</strong> inside Chromebook settings. Download the build, open the Files App, and drag the companion file into the <strong>"Linux files"</strong> folder.', setupCmd: 'Open your terminal interface and map file sandbox executable authority rules:', cmd1: 'chmod +x akari-v2.llamafile', useGui: 'Open the <strong>Terminal</strong> App on your launcher, choose the default command shell instance, and type the execution layout syntax.', useCmd: 'Run the standalone binary locally within protected Linux sandbox space:', cmd: './akari-v2.llamafile' },//AI generated instructions, I'll uh, fix them later.
+            pi: { name: 'ARM64 PI', icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/raspberrypi/raspberrypi-original.svg', invert: false, setupGui: 'Ensure your hardware is running a 64-bit Pi OS. Right-click the downloaded binary file, open <strong>Properties &rarr; Permissions</strong>, and check <strong>"Allow executing file as program"</strong>.', setupCmd: 'Set binary permissions execution structure rules explicitly:', cmd1: 'chmod +x akari-v2.llamafile', useGui: 'Simply <strong>Double-click</strong> the file on your desktop launcher window to activate the daemon background execution thread.', useCmd: 'Launch optimizing thread runtime core allocations for system single board models:', cmd: './akari-v2.llamafile -t 4' }
+        };
+
+        const companions = [
+            { name: 'Akari', ver: 'v2.0', tag: '/!\\ Incomplete.', size: '~1.2 GB', desc: 'Akari as a digita, using lfm2.5.' }
+        ];
+
+        // Structural Rendering Generation Engine
+        const grid = document.getElementById('tabGrid'), containers = document.getElementById('guidesContainer');
+        Object.entries(osData).forEach(([key, os]) => {
+            grid.innerHTML += `<button onclick="selectOS('${key}')" id="tab-${key}" class="flex flex-col items-center justify-center p-6 rounded-lg group transition-all duration-200"><img src="${os.icon}" alt="${os.name}" class="w-12 h-12 mb-3 object-contain opacity-50 group-hover:opacity-100 transition-opacity ${os.invert ? 'filter invert' : ''}"><span class="font-mono text-[10px] tracking-wider text-neutral-500 group-hover:text-neutral-200">${os.name}</span></button>`;
+            
+            containers.innerHTML += `
+                <div id="guide-${key}" class="os-guide hidden bg-neutral-950/20 border border-neutral-900/60 rounded-xl p-6 sm:p-8 space-y-8">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div class="space-y-4">
+                            <h4 class="text-xs font-mono tracking-widest text-white uppercase flex items-center"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-2 animate-pulse"></span>1. Setup</h4>
+                            <div class="bg-neutral-950/50 border border-neutral-900 p-4 rounded-lg space-y-1.5"><h5 class="text-[11px] font-mono tracking-wide text-neutral-200 font-bold">GUI</h5><p class="text-xs leading-relaxed text-neutral-400">${os.setupGui}</p></div>
+                            <div class="bg-neutral-950/50 border border-neutral-900 p-4 rounded-lg space-y-2">
+                                <h5 class="text-[11px] font-mono tracking-wide text-neutral-200 font-bold">Terminal</h5><p class="text-xs leading-relaxed text-neutral-400">${os.setupCmd}</p>
+                                ${os.cmd1 ? `<div class="bg-black border border-neutral-900 rounded p-3 font-mono text-[11px] text-neutral-300 flex justify-between items-center"><span>${os.cmd1}</span><button onclick="copyCmd('${os.cmd1}', 'cp-${key}-1')" id="cp-${key}-1" class="text-neutral-500 hover:text-white transition-colors text-[10px] font-sans flex items-center space-x-1"><svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3a1 1 0 011-1h12a1 1 0 011 1v12a1 1 0 01-1 1h-4M3 7h10a1 1 0 011 1v12a1 1 0 01-1 1H3a1 1 0 01-1-1V8a1 1 0 011-1z"></path></svg><span>Copy</span></button></div>` : ''}
+                            </div>
+                        </div>
+                        <div class="space-y-4 md:border-l border-neutral-900/60 md:pl-8">
+                            <h4 class="text-xs font-mono tracking-widest text-white uppercase flex items-center"><span class="w-1.5 h-1.5 rounded-full bg-cyan-500 mr-2 animate-pulse"></span>2. Usage</h4>
+                            <div class="bg-neutral-950/50 border border-neutral-900 p-4 rounded-lg space-y-1.5"><h5 class="text-[11px] font-mono tracking-wide text-neutral-200 font-bold">GUI</h5><p class="text-xs leading-relaxed text-neutral-400">${os.useGui}</p></div>
+                            <div class="bg-neutral-950/50 border border-neutral-900 p-4 rounded-lg space-y-2">
+                                <h5 class="text-[11px] font-mono tracking-wide text-neutral-200 font-bold">Terminal</h5><p class="text-xs leading-relaxed text-neutral-400">${os.useCmd}</p>
+                                <div class="bg-black border border-neutral-900 rounded p-3 font-mono text-[11px] text-neutral-300 flex justify-between items-center"><span>${os.cmd}</span><button onclick="copyCmd('${os.cmd}', 'cp-${key}-2')" id="cp-${key}-2" class="text-neutral-500 hover:text-white transition-colors text-[10px] font-sans flex items-center space-x-1"><svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3a1 1 0 011-1h12a1 1 0 011 1v12a1 1 0 01-1 1h-4M3 7h10a1 1 0 011 1v12a1 1 0 01-1 1H3a1 1 0 01-1-1V8a1 1 0 011-1z"></path></svg><span>Copy</span></button></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-neutral-950/40 border border-neutral-900 rounded-lg p-5 flex items-start space-x-3.5 text-left">
+                        <div class="w-8 h-8 rounded bg-neutral-900/40 border border-neutral-800 flex items-center justify-center text-neutral-400 flex-shrink-0">
+                            <svg class="w-4 h-4 text-neutral-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-.778.099-1.533.284-2.253"></path></svg>
+                        </div>
+                        <div>
+                            <h5 class="text-xs font-semibold text-neutral-300 tracking-wide mb-1">Localhost Digita webUI</h5>
+                            <p class="text-[11px] text-neutral-500 leading-relaxed">Once launched, the software spins up a local webUI. Open a modern browser of your choice and access Digita directly at: <a href="http://localhost:8080" target="_blank" class="text-white hover:underline font-mono text-[11.5px] border-b border-dashed border-neutral-700">http://localhost:8080</a>.</p>
+                        </div>
+                    </div>
+
+                    <div class="pt-6 border-t border-neutral-900/60 text-center"><button onclick="openModal()" class="w-full sm:w-auto px-10 py-3.5 bg-white text-black font-semibold text-xs tracking-widest uppercase rounded hover:bg-neutral-200 transition-colors">Download a Digita</button></div>
+                </div>`;
+        });
+
+        document.getElementById('modalCompanions').innerHTML = companions.map(c => `
+            <div class="group bg-neutral-900/10 border border-neutral-900 hover:border-neutral-800 rounded p-5 flex flex-col justify-between transition-colors">
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center"><h4 class="text-sm font-semibold text-white">${c.name} ${c.ver}</h4><span class="text-[8px] px-1.5 py-0.5 bg-neutral-900 border border-neutral-800 text-neutral-400 rounded font-mono">${c.tag}</span></div>
+                    <p class="text-[11px] text-neutral-500 leading-relaxed">${c.desc}</p>
+                </div>
+                <div class="mt-5 pt-4 border-t border-neutral-900/50 flex items-center justify-between text-[10px] font-mono text-neutral-500"><span>${c.size}</span><button onclick="downloadCompanion('${c.name}')" class="px-3 py-1 bg-white text-black hover:bg-neutral-200 transition-colors rounded text-[10px] font-bold tracking-wider uppercase">Get ${c.name}</button></div>
+            </div>`).join('');
+
+        window.onload = () => selectOS('windows');
+
+        function selectOS(os) {
+            document.querySelectorAll('.os-guide').forEach(g => g.classList.add('hidden'));
+            Object.keys(osData).forEach(sys => {
+                const btn = document.getElementById(`tab-${sys}`), img = btn.querySelector('img');
+                btn.className = "flex flex-col items-center justify-center p-6 " + (sys === os ? "bg-neutral-950 border border-white" : "bg-neutral-950/40 border border-neutral-900") + " rounded-lg group transition-all duration-200";
+                img.classList.toggle('opacity-100', sys === os); img.classList.toggle('opacity-50', sys !== os);
+            });
+            document.getElementById(`guide-${os}`).classList.remove('hidden');
+        }
+
+        function openModal() {
+            const m = document.getElementById('companionModal'); m.classList.remove('opacity-0', 'pointer-events-none'); m.classList.add('opacity-100');
+            m.querySelector('.relative').classList.replace('scale-95', 'scale-100');
+        }
+
+        function closeModal() {
+            const m = document.getElementById('companionModal'); m.classList.add('opacity-0', 'pointer-events-none'); m.classList.remove('opacity-100');
+            m.querySelector('.relative').classList.replace('scale-100', 'scale-95');
+        }
+
+        function downloadCompanion(name) { closeModal(); triggerAlert("DOWNLOAD STARTED", `${name} digita build has been launched.`); setTimeout(() => window.location=`https://76836.github.io/Digita/v2/build?q=${name}`, 1500);}
+
+        function copyCmd(text, triggerId) {
+            const temp = document.createElement('input'); temp.value = text; document.body.appendChild(temp); temp.select(); document.execCommand('copy'); document.body.removeChild(temp);
+            const btn = document.getElementById(triggerId), orig = btn.innerHTML;
+            btn.innerHTML = `<svg class="w-3.5 h-3.5 mr-1 text-neutral-400" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg> <span class="text-neutral-400">Copied</span>`;
+            triggerAlert("CLIPBOARD", "Syntax copied to clipboard.");
+            setTimeout(() => btn.innerHTML = orig, 2500);
+        }
+
+        function triggerAlert(title, message) {
+            const t = document.getElementById('alertToast'); document.getElementById('alertTitle').innerText = title; document.getElementById('alertMsg').innerText = message;
+            t.classList.replace('translate-y-24', 'translate-y-0'); t.classList.replace('opacity-0', 'opacity-100');
+            setTimeout(() => { t.classList.replace('translate-y-0', 'translate-y-24'); t.classList.replace('opacity-100', 'opacity-0'); }, 3000);
+        }
+    </script>
+</body>
+</html>
